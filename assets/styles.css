@@ -1,0 +1,224 @@
+/* Shared styles for lesson pages. Layout uses Tailwind utility classes;
+   this file holds the reusable components (also used by the reward HTML
+   that arrives from the API after unlocking). */
+
+:root {
+  --blue: #2563eb;
+  --blue-soft: #eff6ff;
+  --green: #059669;
+  --green-soft: #ecfdf5;
+  --red: #dc2626;
+  --red-soft: #fef2f2;
+  --amber: #b45309;
+  --amber-soft: #fffbeb;
+  --line: #e2e8f0;
+}
+
+body { background: #f8fafc; }
+
+/* ---------- sticky header */
+.app-header {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 30;
+}
+
+/* ---------- step cards */
+.step-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  transition: box-shadow 0.6s, border-color 0.6s;
+}
+@media (min-width: 640px) { .step-card { padding: 1.75rem; } }
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+
+.success-glow {
+  border-color: #6ee7b7;
+  box-shadow: 0 0 0 4px rgb(16 185 129 / 0.18), 0 0 32px rgb(16 185 129 / 0.35);
+}
+
+/* ---------- CCQ options (letters follow the shuffled order) */
+.options { counter-reset: opt; display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+.option {
+  counter-increment: opt;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.option::before {
+  content: counter(opt, upper-alpha);
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #f1f5f9;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #475569;
+}
+.option input { position: absolute; opacity: 0; pointer-events: none; }
+.option:hover { border-color: #93c5fd; }
+.option:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
+.option:has(input:checked)::before { background: var(--blue); color: #fff; }
+.option:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ---------- rule dropdowns */
+.rule-select {
+  border: 2px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  margin: 0.15rem 0.1rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  background: var(--blue-soft);
+  max-width: 100%;
+}
+
+/* ---------- feedback states */
+.is-wrong { border-color: var(--red) !important; background: var(--red-soft) !important; }
+.is-right { border-color: var(--green) !important; background: var(--green-soft) !important; }
+.is-missing { border-color: #f59e0b !important; background: var(--amber-soft) !important; }
+.ccq.is-wrong, .ccq.is-right, .ccq.is-missing { border-width: 2px; }
+.ccq { border: 2px solid transparent; border-radius: 0.9rem; padding: 0.75rem; margin: 0 -0.75rem; }
+
+.shake { animation: shake 0.4s; }
+@keyframes shake {
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+/* ---------- locked reward */
+.locked-preview { filter: blur(6px); user-select: none; pointer-events: none; }
+.lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1rem;
+  background: linear-gradient(to bottom, rgb(248 250 252 / 0.4), rgb(248 250 252 / 0.9));
+}
+.unlock-in { animation: unlock-in 0.8s ease-out; }
+@keyframes unlock-in {
+  from { opacity: 0; transform: translateY(12px); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* ---------- confetti */
+.confetti-piece {
+  position: fixed;
+  top: -12px;
+  width: 10px;
+  height: 14px;
+  z-index: 60;
+  pointer-events: none;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  to { transform: translate3d(var(--drift), 105vh, 0) rotate(var(--spin)); opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shake, .unlock-in { animation: none; }
+  .confetti-piece { display: none; }
+}
+
+/* ---------- Grammar Links boxes (textbook style: vertical tag on the side) */
+.grammar-links {
+  display: flex;
+  border: 2px solid #bfdbfe;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #fff;
+}
+.grammar-links__tag {
+  flex: none;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: var(--blue);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.75rem 0.4rem;
+}
+.grammar-links__body { flex: 1; min-width: 0; padding: 1rem 1.25rem; }
+.grammar-links table { border-collapse: collapse; }
+
+/* ---------- practice exercises */
+.exercise {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+.exercise__title { font-weight: 700; color: #1e293b; margin-bottom: 0.75rem; }
+.exercise__list { list-style: decimal; padding-left: 1.5rem; display: grid; gap: 0.9rem; line-height: 2.1; }
+.exercise__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+.exercise__result { font-weight: 600; }
+.hint { color: #64748b; font-size: 0.9em; }
+
+.gap-input, .gap-select {
+  border: 0;
+  border-bottom: 2px solid #94a3b8;
+  background: #f8fafc;
+  padding: 0 0.35rem;
+  width: 7rem;
+  max-width: 100%;
+  font-weight: 600;
+  color: #1e3a8a;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+.gap-input--wide { width: 12rem; }
+.gap-select { width: auto; }
+.gap-input:focus, .gap-select:focus { outline: none; border-bottom-color: var(--blue); background: var(--blue-soft); }
+.gap-input.is-wrong, .gap-select.is-wrong { border-bottom-color: var(--red) !important; }
+.gap-input.is-right, .gap-select.is-right { border-bottom-color: var(--green) !important; }
+
+.write-input {
+  display: block;
+  width: 100%;
+  margin-top: 0.4rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  line-height: 1.5;
+}
+.model-answer { margin-top: 0.4rem; line-height: 1.5; }
+.model-answer summary { cursor: pointer; color: var(--blue); font-weight: 600; font-size: 0.9rem; }
+.model-answer[open] { background: var(--green-soft); border-radius: 0.5rem; padding: 0.5rem 0.7rem; }
+
+.btn-check, .btn-reveal {
+  border-radius: 0.6rem;
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.btn-check { background: var(--blue); color: #fff; }
+.btn-check:hover { background: #1d4ed8; }
+.btn-reveal { background: #f1f5f9; color: #334155; }
+.btn-reveal:hover { background: #e2e8f0; }

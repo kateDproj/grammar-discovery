@@ -6,3 +6,6 @@ task.md
 
 # Apps Script local config (contains script ID)
 .clasp.json
+
+# Answer key seed - uploaded to Apps Script only, never to GitHub
+gas/Seed.gs
