@@ -1,0 +1,8 @@
+# Textbook PDF is copyrighted - never publish it
+*.pdf
+
+# Local notes
+task.md
+
+# Apps Script local config (contains script ID)
+.clasp.json
