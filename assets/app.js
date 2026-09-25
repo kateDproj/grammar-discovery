@@ -118,8 +118,31 @@
     return answers;
   }
 
-  function restoreDraft() {
-    const draft = store.get(draftKey());
+  // Unfinished discovery answers are kept in this browser and on the server (Drafts tab),
+  // so a student can continue later on the same or another device.
+  const DRAFT_SYNC_DELAY_MS = 1500;
+  let draftTimer = null;
+  let draftUnsent = false;
+
+  /** Local drafts are {answers, t}; drafts from before server sync were a plain answers object. */
+  function localDraft() {
+    const saved = store.get(draftKey());
+    if (!saved) return null;
+    return saved.answers ? saved : { answers: saved, t: 0 };
+  }
+
+  /** Uses whichever copy is newer: this browser's or the server's. */
+  function restoreDraft(serverDraft) {
+    const local = localDraft();
+    const serverTime = serverDraft && Date.parse(serverDraft.client_time) || 0;
+    let draft = null;
+    if (local && local.t >= serverTime) {
+      draft = local.answers;
+      if (local.t > serverTime) scheduleDraftSync();
+    } else if (serverDraft) {
+      draft = serverDraft.answers;
+      store.set(draftKey(), { answers: draft, t: serverTime });
+    }
     if (!draft) return;
     Object.keys(draft).forEach((id) => {
       const el = document.querySelector('[data-question="' + id + '"]');
@@ -148,8 +171,35 @@
 
   function saveDraft() {
     if (!state.studentId) return;
-    store.set(draftKey(), readAnswers());
+    store.set(draftKey(), { answers: readAnswers(), t: Date.now() });
+    scheduleDraftSync();
   }
+
+  function scheduleDraftSync() {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(syncDraft, DRAFT_SYNC_DELAY_MS);
+  }
+
+  async function syncDraft() {
+    const draft = localDraft();
+    if (!draft || !state.studentId) return;
+    try {
+      await api('POST', {
+        action: 'draft',
+        student_id: state.studentId,
+        lesson_id: LESSON_ID,
+        answers: draft.answers,
+        client_time: new Date(draft.t).toISOString(),
+      });
+      draftUnsent = false;
+    } catch (err) {
+      draftUnsent = true; // sent again when the connection returns or on the next change
+    }
+  }
+
+  window.addEventListener('online', () => {
+    if (draftUnsent) syncDraft();
+  });
 
   function clearMarks() {
     document.querySelectorAll('[data-question]').forEach((el) => {
@@ -261,7 +311,7 @@
       state.practiceMaxChecks = data.lesson.practice_max_checks || null;
       state.serverPractice = data.practice;
       store.set('gd:student_id', id);
-      restoreDraft();
+      restoreDraft(data.draft);
 
       els.header.querySelector('[data-h="name"]').textContent = data.student.name;
       els.header.querySelector('[data-h="lesson"]').textContent = data.lesson.title;

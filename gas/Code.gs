@@ -15,6 +15,10 @@
  *       "revealed":["2","4"],"client_time":"..."}
  *      -> records one practice event in the Practice tab (only after the lesson is unlocked).
  *
+ * POST {"action":"draft","student_id":"101","lesson_id":"...","answers":{"q1":"..."},"client_time":"..."}
+ *      -> saves the unfinished discovery answers (one row per student and lesson in the Drafts tab),
+ *         so the student can continue on another device. Returned by login as "draft".
+ *
  * POST {"action":"admin","teacher_id":"T-...","op":"overview|add_student|update_student|delete_student|
  *       save_lesson|reset_progress", ...}
  *      -> teacher control center (teacher.html). Every op requires a teacher ID from the Teachers tab.
@@ -41,6 +45,7 @@ const SHEETS = {
   },
   answerKey: { name: 'AnswerKey', headers: ['lesson_id', 'question_id', 'correct_answer'] },
   teachers: { name: 'Teachers', headers: ['teacher_id', 'teacher_name'] },
+  drafts: { name: 'Drafts', headers: ['student_id', 'lesson_id', 'answers_json', 'client_time', 'updated_at'] },
 };
 
 const MAX_ANSWER_LENGTH = 200;
@@ -69,6 +74,7 @@ function doPost(e) {
     }
     if (body.action === 'check') return check_(body);
     if (body.action === 'practice') return practice_(body);
+    if (body.action === 'draft') return draft_(body);
     if (body.action === 'admin') return admin_(body);
     throw apiError_('unknown_action', 'Невідома дія.');
   });
@@ -92,7 +98,53 @@ function login_(studentId, lessonId) {
     passed: ctx.passed,
     reward: ctx.passed ? reward_(ctx.lesson.lesson_id) : null,
     practice: ctx.passed ? latestPractice_(ctx.student.student_id, ctx.lesson.lesson_id) : null,
+    draft: readDraft_(ctx.student.student_id, ctx.lesson.lesson_id),
   };
+}
+
+function draft_(body) {
+  const ctx = loadContext_(body.student_id, body.lesson_id);
+  const given = body.answers && typeof body.answers === 'object' ? body.answers : {};
+  const answers = {};
+  Object.keys(given).slice(0, 40).forEach((k) => {
+    if (/^[A-Za-z0-9_]{1,20}$/.test(k)) answers[k] = String(given[k] == null ? '' : given[k]).slice(0, MAX_ANSWER_LENGTH);
+  });
+  const clientTime = String(body.client_time || '').slice(0, 40);
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    // Created on first use, so older spreadsheets need no manual upgrade for this tab.
+    ensureSheet_(SpreadsheetApp.getActiveSpreadsheet(), SHEETS.drafts);
+    const existing = readTable_(SHEETS.drafts).find((row) =>
+      row.student_id === ctx.student.student_id && row.lesson_id === ctx.lesson.lesson_id);
+    // Ignore an older draft arriving late (e.g. sent from a phone that was offline).
+    if (existing && existing.client_time && clientTime && existing.client_time > clientTime) return { ok: true, stale: true };
+    const fields = {
+      student_id: ctx.student.student_id,
+      lesson_id: ctx.lesson.lesson_id,
+      answers_json: JSON.stringify(answers),
+      client_time: clientTime,
+      updated_at: new Date(),
+    };
+    writeRow_(SHEETS.drafts, existing ? existing._row : null, fields);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
+}
+
+function readDraft_(studentId, lessonId) {
+  if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.drafts.name)) return null;
+  const row = readTable_(SHEETS.drafts).find((r) => r.student_id === studentId && r.lesson_id === lessonId);
+  if (!row) return null;
+  let answers = {};
+  try {
+    answers = JSON.parse(row.answers_json || '{}');
+  } catch (err) {
+    answers = {};
+  }
+  return { answers: answers, client_time: row.client_time };
 }
 
 function check_(body) {
@@ -324,6 +376,9 @@ function resetProgress_(studentId, lessonId, scope) {
   if (RESET_SCOPES.indexOf(scope) === -1) throw apiError_('bad_request', 'Некоректна дія.');
   const tabs = [];
   if (scope !== 'practice') tabs.push(SHEETS.attempts);
+  if (scope !== 'practice' && SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.drafts.name)) {
+    tabs.push(SHEETS.drafts);
+  }
   if (scope !== 'discovery' && SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.practice.name)) {
     tabs.push(SHEETS.practice);
   }
