@@ -224,6 +224,14 @@ body { background: #f8fafc; }
 .gap-input:focus, .gap-select:focus { outline: none; border-bottom-color: var(--blue); background: var(--blue-soft); }
 .gap-input.is-wrong, .gap-select.is-wrong { border-bottom-color: var(--red) !important; }
 .gap-input.is-right, .gap-select.is-right { border-bottom-color: var(--green) !important; }
+.gap-input.is-missing, .gap-select.is-missing { border-bottom-color: #f59e0b !important; }
+/* Given by "show answers", not found by the student: visibly different from a correct answer. */
+.gap-input.is-revealed, .gap-select.is-revealed {
+  border-bottom: 2px dashed var(--amber) !important;
+  background: var(--amber-soft) !important;
+  color: var(--amber);
+  opacity: 1;
+}
 
 .write-input {
   display: block;

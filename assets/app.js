@@ -331,6 +331,7 @@
   function unlock(html, scroll) {
     els.reward.innerHTML = '<div class="unlock-in">' + html + '</div>';
     els.reward.classList.remove('relative');
+    initPractice();
     els.checkButton.disabled = true;
     els.checkButton.textContent = '✅ Перевірено';
     els.analysisCards.forEach((card) => {
@@ -363,27 +364,142 @@
     return String(s).toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, ' ').trim();
   }
 
-  function checkExercise(section) {
-    const gaps = section.querySelectorAll('[data-answer]');
-    let right = 0;
-    gaps.forEach((gap) => {
-      const accepted = gap.dataset.answer.split('|').map(normalize);
-      const ok = accepted.indexOf(normalize(gap.value)) !== -1;
-      gap.classList.toggle('is-right', ok);
-      gap.classList.toggle('is-wrong', !ok);
-      if (ok) right++;
-    });
-    const result = section.querySelector('[data-exercise-result]');
-    result.textContent = right + ' / ' + gaps.length;
-    result.className = 'exercise__result ' + (right === gaps.length ? 'text-emerald-700' : 'text-amber-700');
+  // Answers can be revealed only after the student has tried this many times.
+  const REVEAL_AFTER_CHECKS = 2;
+  // A model answer opens only after the student has written at least this much.
+  const MIN_WRITING_LENGTH = 10;
+  const GAP_STATES = ['is-right', 'is-wrong', 'is-missing', 'is-revealed'];
+
+  const practiceKey = () => 'gd:practice:' + LESSON_ID + ':' + state.studentId;
+
+  function isCorrect(gap) {
+    return gap.dataset.answer.split('|').map(normalize).indexOf(normalize(gap.value)) !== -1;
   }
 
+  function setGapState(gap, cls) {
+    gap.classList.remove.apply(gap.classList, GAP_STATES);
+    if (cls) gap.classList.add(cls);
+  }
+
+  function lockRevealedGap(gap) {
+    if (gap.tagName === 'SELECT') gap.disabled = true;
+    else gap.readOnly = true;
+  }
+
+  function renderExerciseResult(section) {
+    const gaps = Array.from(section.querySelectorAll('[data-answer]'));
+    const checks = Number(section.dataset.checks || 0);
+    const revealed = gaps.filter((g) => g.classList.contains('is-revealed')).length;
+    const right = gaps.filter((g) => g.classList.contains('is-right')).length;
+    const done = right + revealed === gaps.length;
+    const result = section.querySelector('[data-exercise-result]');
+    const revealButton = section.querySelector('[data-reveal-exercise]');
+
+    revealButton.hidden = done || checks < REVEAL_AFTER_CHECKS;
+    if (!checks) {
+      result.textContent = '';
+      return;
+    }
+    let text = right + ' / ' + gaps.length;
+    if (revealed) text += ' · показано відповідей: ' + revealed;
+    else if (done) text = '✅ ' + text;
+    else if (checks < REVEAL_AFTER_CHECKS) text += ' · Виправте червоні пропуски й перевірте ще раз.';
+    result.textContent = text;
+    result.className = 'exercise__result ' + (done && !revealed ? 'text-emerald-700' : 'text-amber-700');
+  }
+
+  function checkExercise(section) {
+    const gaps = Array.from(section.querySelectorAll('[data-answer]')).filter((g) => !g.classList.contains('is-revealed'));
+    const empty = gaps.filter((g) => !g.value.trim());
+    if (empty.length) {
+      empty.forEach((g) => setGapState(g, 'is-missing'));
+      const result = section.querySelector('[data-exercise-result]');
+      result.textContent = 'Спершу заповніть усі пропуски.';
+      result.className = 'exercise__result text-amber-700';
+      return;
+    }
+    section.dataset.checks = Number(section.dataset.checks || 0) + 1;
+    gaps.forEach((g) => setGapState(g, isCorrect(g) ? 'is-right' : 'is-wrong'));
+    renderExerciseResult(section);
+    savePractice();
+  }
+
+  /** Reveals only the gaps that are still wrong; correct answers stay the student's own. */
   function revealExercise(section) {
+    if (Number(section.dataset.checks || 0) < REVEAL_AFTER_CHECKS) return;
     section.querySelectorAll('[data-answer]').forEach((gap) => {
+      if (gap.classList.contains('is-right') || gap.classList.contains('is-revealed')) return;
       gap.value = gap.dataset.answer.split('|')[0];
-      gap.classList.remove('is-wrong');
-      gap.classList.add('is-right');
+      setGapState(gap, 'is-revealed');
+      lockRevealedGap(gap);
     });
+    renderExerciseResult(section);
+    savePractice();
+  }
+
+  function onModelAnswerToggle(event) {
+    const summary = event.target.closest('.model-answer > summary');
+    if (!summary) return;
+    const details = summary.parentElement;
+    const writing = details.previousElementSibling;
+    if (details.open || !writing || writing.tagName !== 'TEXTAREA') return;
+    let note = details.querySelector('[data-writing-note]');
+    if (writing.value.trim().length < MIN_WRITING_LENGTH) {
+      event.preventDefault();
+      if (!note) {
+        note = document.createElement('span');
+        note.dataset.writingNote = '';
+        note.className = 'ml-2 text-sm font-medium text-amber-700';
+        summary.after(note);
+      }
+      note.textContent = 'Спершу напишіть свій варіант.';
+      writing.focus();
+    } else if (note) {
+      note.remove();
+    }
+  }
+
+  // ------------------------------------------------------------ practice progress (saved per student in this browser)
+
+  function practiceFields() {
+    return Array.from(els.reward.querySelectorAll('input, select, textarea'));
+  }
+
+  function savePractice() {
+    if (!state.studentId) return;
+    store.set(practiceKey(), {
+      fields: practiceFields().map((f) => ({
+        v: f.value,
+        s: GAP_STATES.find((c) => f.classList.contains(c)) || '',
+      })),
+      checks: Array.from(els.reward.querySelectorAll('[data-exercise]')).map((s) => Number(s.dataset.checks || 0)),
+    });
+  }
+
+  function restorePractice() {
+    const saved = store.get(practiceKey());
+    const fields = practiceFields();
+    if (saved && saved.fields && saved.fields.length === fields.length) {
+      fields.forEach((f, i) => {
+        f.value = saved.fields[i].v;
+        setGapState(f, saved.fields[i].s);
+        if (saved.fields[i].s === 'is-revealed') lockRevealedGap(f);
+      });
+      els.reward.querySelectorAll('[data-exercise]').forEach((s, i) => {
+        s.dataset.checks = (saved.checks && saved.checks[i]) || 0;
+      });
+    }
+    els.reward.querySelectorAll('[data-exercise]').forEach(renderExerciseResult);
+  }
+
+  function initPractice() {
+    restorePractice();
+    els.reward.addEventListener('input', (event) => {
+      const f = event.target;
+      if (f.matches('[data-answer]') && !f.classList.contains('is-revealed')) setGapState(f, '');
+      savePractice();
+    });
+    els.reward.addEventListener('change', savePractice);
   }
 
   document.addEventListener('click', (event) => {
@@ -391,6 +507,7 @@
     const reveal = event.target.closest('[data-reveal-exercise]');
     if (check) checkExercise(check.closest('[data-exercise]'));
     if (reveal) revealExercise(reveal.closest('[data-exercise]'));
+    onModelAnswerToggle(event);
   });
 
   // ------------------------------------------------------------ boot
