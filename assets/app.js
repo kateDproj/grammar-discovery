@@ -37,7 +37,7 @@
       try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* private mode etc. */ }
     },
   };
-  const draftKey = () => 'gd:draft:' + LESSON_ID;
+  const draftKey = () => 'gd:draft:' + LESSON_ID + ':' + state.studentId;
   const OUTBOX_KEY = 'gd:outbox';
 
   // ------------------------------------------------------------ API
@@ -133,7 +133,21 @@
     });
   }
 
+  /** Starts from a blank form, even if the browser restored old selections on reload. */
+  function clearAnswers() {
+    document.querySelectorAll('[data-question]').forEach((el) => {
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else el.querySelectorAll('input[type="radio"]').forEach((i) => (i.checked = false));
+    });
+  }
+
+  /** Earlier versions kept one draft per lesson for everybody on this browser. */
+  function removeLegacyDraft() {
+    try { localStorage.removeItem('gd:draft:' + LESSON_ID); } catch (e) { /* storage unavailable */ }
+  }
+
   function saveDraft() {
+    if (!state.studentId) return;
     store.set(draftKey(), readAnswers());
   }
 
@@ -247,6 +261,7 @@
       state.practiceMaxChecks = data.lesson.practice_max_checks || null;
       state.serverPractice = data.practice;
       store.set('gd:student_id', id);
+      restoreDraft();
 
       els.header.querySelector('[data-h="name"]').textContent = data.student.name;
       els.header.querySelector('[data-h="lesson"]').textContent = data.lesson.title;
@@ -673,7 +688,8 @@
   function init() {
     buildChrome();
     shuffleOptions();
-    restoreDraft();
+    clearAnswers();
+    removeLegacyDraft();
 
     document.querySelectorAll('[data-question]').forEach((el) => {
       el.addEventListener('change', () => {
