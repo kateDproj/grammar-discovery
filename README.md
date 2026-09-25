@@ -10,7 +10,7 @@ Content is adapted from *Karpiuk O. English (11th grade), 2019*: Conditionals I 
 |---|---|---|
 | Frontend | GitHub Pages (this repo) | Static HTML + Tailwind CSS (CDN) + vanilla JS, no build step |
 | Backend | Google Apps Script Web App (`gas/`) | `doGet` (login) and `doPost` (answer check) |
-| Database | Google Sheets | Tabs `Students`, `Lessons`, `Attempts`, `Practice`, `Teachers`, hidden `AnswerKey` |
+| Database | Google Sheets | Tabs `Students`, `Lessons`, `Content`, `Attempts`, `Drafts`, `Practice`, `Teachers`, hidden `AnswerKey` |
 
 ### Lesson flow
 1. **Observation** – a short text with the target structures highlighted.
@@ -25,7 +25,10 @@ Content is adapted from *Karpiuk O. English (11th grade), 2019*: Conditionals I 
 - Limitations: students identify themselves by ID only (no password), and the practice exercises inside the reward are self-check exercises whose keys are delivered with the reward.
 
 ## Files
-- `index.html` – module menu
+- `index.html` – lists published lessons
+- `lesson.html` – universal lesson page (`lesson.html?id=...`); `module1.html` / `module2.html` forward to it
+- `assets/lesson-render.js` – draws a lesson from its data
+- `assets/teacher-editor.js` – lesson editor in the teacher control center
 - `teacher.html`, `assets/teacher.js`, `assets/teacher.css` – teacher control center
 - `module1.html`, `module2.html` – lessons
 - `assets/app.js` – login modal, sticky header, shuffling, checking, unlocking
@@ -33,6 +36,9 @@ Content is adapted from *Karpiuk O. English (11th grade), 2019*: Conditionals I 
 - `assets/config.js` – URL of the Apps Script Web App
 - `gas/Code.gs` – backend API and one-time `setup()`
 - `gas/reward_*.html` – reward sections served after a correct attempt
+
+## Creating lessons
+In the teacher control center, open **Уроки** → **+ Новий урок** (or copy an existing lesson). Fill in the five steps, tick the correct answers, check the preview and press **Опублікувати**. The lesson appears on the home page immediately; the answer key is built from the ticked answers and stays on the server. Drafts are hidden from students.
 
 ## Teacher guide
 Use the **teacher control center** (`teacher.html`, linked at the bottom of the home page). Log in with a teacher ID from the `Teachers` tab. It shows an overview per module (progress, hardest questions, practice results), every student's attempts with the real question texts, and lets you add or edit students, reset a student's progress and change module settings, so you don't need to edit the spreadsheet directly.
