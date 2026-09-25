@@ -17,11 +17,15 @@
       <div class="text-4xl mb-3">🧑‍🏫</div>
       <h1 class="text-2xl font-bold text-slate-900">Панель вчителя</h1>
       <p class="mt-1 text-sm text-slate-500">Введіть ваш ID вчителя.</p>
-      <label class="block mt-5">
-        <span class="sr-only">Teacher ID</span>
-        <input name="teacher_id" type="password" autocomplete="current-password" required
-          class="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-lg font-semibold tracking-wider focus:border-blue-500 focus:outline-none">
-      </label>
+      <div class="relative mt-5">
+        <label>
+          <span class="sr-only">Teacher ID</span>
+          <input name="teacher_id" type="password" autocomplete="current-password" required
+            class="w-full rounded-xl border-2 border-slate-200 py-3 pl-4 pr-14 text-lg font-semibold tracking-wider focus:border-blue-500 focus:outline-none">
+        </label>
+        <button type="button" data-toggle-id aria-label="Показати ID" aria-pressed="false" title="Показати ID"
+          class="absolute inset-y-0 right-1 my-1 flex w-12 items-center justify-center rounded-lg text-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700">👁</button>
+      </div>
       <p data-login-error class="mt-3 min-h-[1.25rem] text-sm font-medium text-red-600" role="alert"></p>
       <button type="submit" class="mt-2 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-60">Увійти</button>
       <a href="index.html" class="mt-4 block text-center text-sm text-slate-500 hover:text-slate-700">← На головну</a>

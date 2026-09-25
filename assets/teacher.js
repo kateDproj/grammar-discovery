@@ -644,6 +644,18 @@
   }
 
   const loginForm = $('#t-login form');
+
+  $('[data-toggle-id]', loginForm).addEventListener('click', (event) => {
+    const button = event.currentTarget;
+    const input = $('input', loginForm);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    button.textContent = show ? '🙈' : '👁';
+    button.setAttribute('aria-pressed', String(show));
+    button.setAttribute('aria-label', show ? 'Сховати ID' : 'Показати ID');
+    button.title = button.getAttribute('aria-label');
+    input.focus();
+  });
   loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const input = $('input', loginForm);
