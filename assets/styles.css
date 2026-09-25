@@ -145,28 +145,49 @@ body { background: #f8fafc; }
   .confetti-piece { display: none; }
 }
 
-/* ---------- Grammar Links boxes (textbook style: vertical tag on the side) */
+/* ---------- Grammar Links boxes (textbook style: salmon corner tag, bottom right) */
 .grammar-links {
-  display: flex;
-  border: 2px solid #bfdbfe;
+  position: relative;
+  border: 1.5px solid #334155;
   border-radius: 1rem;
   overflow: hidden;
   background: #fff;
 }
 .grammar-links__tag {
-  flex: none;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  background: var(--blue);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 10rem;
+  height: 4.25rem;
+  background: linear-gradient(to top left, #f6b0a8 50%, transparent 50.5%);
+  color: #1e293b;
+  font-weight: 500;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  line-height: 1.05;
   text-transform: uppercase;
-  text-align: center;
-  padding: 0.75rem 0.4rem;
+  text-align: right;
+  padding: 1.3rem 0.8rem 0 0;
+  transform-origin: bottom right;
+  pointer-events: none;
 }
-.grammar-links__body { flex: 1; min-width: 0; padding: 1rem 1.25rem; }
+.grammar-links__tag span { display: inline-block; transform: rotate(-22deg) translate(-0.2rem, 0.9rem); }
+.grammar-links__body { padding: 1rem 1.25rem 3.75rem; }
+.grammar-links--plain .grammar-links__body { padding-bottom: 1rem; }
+.gl-title { text-align: center; font-weight: 700; color: #0e7ac4; letter-spacing: 0.02em; }
+.gl-accent { color: #0e7ac4; font-weight: 700; }
+.gl-bullets { list-style: none; padding: 0; display: grid; gap: 0.6rem; }
+.gl-bullets > li { position: relative; padding-left: 1.4rem; }
+.gl-bullets > li::before {
+  content: '';
+  position: absolute;
+  left: 0.2rem;
+  top: 0.55em;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #9ca3af;
+}
 .grammar-links table { border-collapse: collapse; }
 
 /* ---------- practice exercises */
