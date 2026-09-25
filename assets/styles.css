@@ -103,6 +103,11 @@ body { background: #f8fafc; }
 .is-missing { border-color: #f59e0b !important; background: var(--amber-soft) !important; }
 .ccq.is-wrong, .ccq.is-right, .ccq.is-missing { border-width: 2px; }
 .ccq { border: 2px solid transparent; border-radius: 0.9rem; padding: 0.75rem; margin: 0 -0.75rem; }
+/* A floated legend sits inside the box instead of on its top border. */
+.ccq > legend { float: left; width: 100%; padding: 0; }
+.ccq > legend + * { clear: both; }
+.ccq-quote { display: block; margin: 0.35rem 0; padding: 0.4rem 0.75rem; border-left: 3px solid #93c5fd; background: #f8fafc; font-style: italic; font-weight: 400; }
+.rule-example { font-style: italic; color: #1d4ed8; }
 
 .shake { animation: shake 0.4s; }
 @keyframes shake {

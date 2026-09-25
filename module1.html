@@ -29,58 +29,87 @@
       </div>
     </section>
 
-    <!-- Step 2: CCQs -->
+    <!-- Step 2: meaning CCQs -->
     <section class="step-card" data-analysis>
-      <span class="step-badge">Крок 2 · Аналіз</span>
-      <h2 class="mt-3 text-xl font-bold text-slate-900">Concept Checking Questions</h2>
-      <p class="mt-1 text-sm text-slate-500">Оберіть одну відповідь на кожне питання.</p>
-
+      <span class="step-badge">Крок 2 · Аналіз значення</span>
+      <h2 class="mt-3 text-xl font-bold text-slate-900">What do the sentences mean?</h2>
+      <p class="mt-1 text-sm text-slate-500">Перечитайте речення з діалогу й дайте відповідь на кожне питання.</p>
       <div class="mt-5 space-y-5">
         <fieldset class="ccq" data-question="q1">
-          <legend class="font-medium">1. Look at the sentence <i>"I will come if you invite me"</i>. Does it refer to a real, possible future or an imaginary situation?</legend>
+          <legend class="font-medium">1. <span class="ccq-quote">David: "I will come if you invite me."</span>Is it possible that Emma will invite David?</legend>
           <div class="options" data-shuffle>
-            <label class="option"><input type="radio" name="q1" value="real_future"><span>A real, possible future</span></label>
-            <label class="option"><input type="radio" name="q1" value="imaginary"><span>An imaginary, unreal situation</span></label>
+            <label class="option"><input type="radio" name="q1" value="possible"><span>Yes, it's quite possible.</span></label>
+            <label class="option"><input type="radio" name="q1" value="impossible"><span>No, it's impossible.</span></label>
           </div>
           <p class="mt-2 text-sm font-medium text-red-600" data-feedback></p>
         </fieldset>
 
         <fieldset class="ccq" data-question="q2">
-          <legend class="font-medium">2. Look at <i>"What would you do if you won the lottery?"</i>. Does this refer to a real plan or an imaginary situation?</legend>
+          <legend class="font-medium">2. <span class="ccq-quote">David: "If I had the money, I would buy a huge house."</span>Does David have the money now?</legend>
           <div class="options" data-shuffle>
-            <label class="option"><input type="radio" name="q2" value="real_plan"><span>A real plan</span></label>
-            <label class="option"><input type="radio" name="q2" value="imaginary"><span>An imaginary, unreal situation</span></label>
+            <label class="option"><input type="radio" name="q2" value="no"><span>No, he doesn't.</span></label>
+            <label class="option"><input type="radio" name="q2" value="yes"><span>Yes, he does.</span></label>
           </div>
           <p class="mt-2 text-sm font-medium text-red-600" data-feedback></p>
         </fieldset>
 
         <fieldset class="ccq" data-question="q3">
-          <legend class="font-medium">3. In the sentence <i>"I won't finish unless I start right away"</i>, what does the word <b>'unless'</b> mean?</legend>
+          <legend class="font-medium">3. <span class="ccq-quote">Emma: "What would you do if you won the lottery?"</span>Does Emma really expect David to win the lottery?</legend>
           <div class="options" data-shuffle>
-            <label class="option"><input type="radio" name="q3" value="if_not"><span>if not</span></label>
-            <label class="option"><input type="radio" name="q3" value="because"><span>because</span></label>
-            <label class="option"><input type="radio" name="q3" value="when"><span>when</span></label>
+            <label class="option"><input type="radio" name="q3" value="unlikely"><span>No, it's very unlikely. She is just imagining.</span></label>
+            <label class="option"><input type="radio" name="q3" value="expects"><span>Yes, she's sure he will win.</span></label>
+          </div>
+          <p class="mt-2 text-sm font-medium text-red-600" data-feedback></p>
+        </fieldset>
+
+        <fieldset class="ccq" data-question="q4">
+          <legend class="font-medium">4. <span class="ccq-quote">David: "I won't finish my homework on time unless I start right away."</span>What does <b>unless</b> mean here?</legend>
+          <div class="options" data-shuffle>
+            <label class="option"><input type="radio" name="q4" value="if_not"><span>if not</span></label>
+            <label class="option"><input type="radio" name="q4" value="because"><span>because</span></label>
+            <label class="option"><input type="radio" name="q4" value="when"><span>when</span></label>
           </div>
           <p class="mt-2 text-sm font-medium text-red-600" data-feedback></p>
         </fieldset>
       </div>
     </section>
 
-    <!-- Step 3: Rule formulation -->
+    <!-- Step 3: form CCQs -->
     <section class="step-card" data-analysis>
-      <span class="step-badge">Крок 3 · Формулюємо правило</span>
+      <span class="step-badge">Крок 3 · Аналіз форми</span>
+      <h2 class="mt-3 text-xl font-bold text-slate-900">Look at the verbs</h2>
+      <p class="mt-1 text-sm text-slate-500">Тепер уважно подивіться на форму дієслів.</p>
+      <div class="mt-5 space-y-5">
+        <fieldset class="ccq" data-question="f1">
+          <legend class="font-medium">5. <span class="ccq-quote">I will come if you <b>invite</b> me.</span>The invitation will happen in the future. Which verb form comes after <b>if</b>?</legend>
+          <div class="options" data-shuffle>
+            <label class="option"><input type="radio" name="f1" value="present_simple"><span><b>invite</b>: Present Simple</span></label>
+            <label class="option"><input type="radio" name="f1" value="future_simple"><span><b>will invite</b>: Future Simple</span></label>
+          </div>
+          <p class="mt-2 text-sm font-medium text-red-600" data-feedback></p>
+        </fieldset>
+
+        <fieldset class="ccq" data-question="f2">
+          <legend class="font-medium">6. <span class="ccq-quote">What would you do if you <b>won</b> the lottery?</span><b>Won</b> is a past form. Is Emma talking about the past?</legend>
+          <div class="options" data-shuffle>
+            <label class="option"><input type="radio" name="f2" value="not_past"><span>No. She is talking about an imaginary situation now or in the future.</span></label>
+            <label class="option"><input type="radio" name="f2" value="past"><span>Yes. She is asking about a lottery David won in the past.</span></label>
+          </div>
+          <p class="mt-2 text-sm font-medium text-red-600" data-feedback></p>
+        </fieldset>
+      </div>
+    </section>
+
+    <!-- Step 4: rule formulation -->
+    <section class="step-card" data-analysis>
+      <span class="step-badge">Крок 4 · Формулюємо правило</span>
       <h2 class="mt-3 text-xl font-bold text-slate-900">Complete the rule</h2>
-      <p class="mt-1 text-sm text-slate-500">Оберіть правильне слово в кожному пропуску.</p>
-      <ol class="mt-5 list-decimal space-y-4 pl-6 text-base sm:text-lg leading-loose">
-        <li>First Conditionals are used for
-          <select class="rule-select" data-question="r1" aria-label="rule 1"><option value="">оберіть…</option><option value="real">real</option><option value="unreal">unreal</option></select>
-          situations in the future.</li>
-        <li>The verb in the 'if' clause of the 1st type is usually in a
-          <select class="rule-select" data-question="r2" aria-label="rule 2"><option value="">оберіть…</option><option value="present">present</option><option value="future">future</option></select>
-          tense.</li>
-        <li>Second Conditionals are used for
-          <select class="rule-select" data-question="r3" aria-label="rule 3"><option value="">оберіть…</option><option value="real">real</option><option value="unreal">unreal</option></select>
-          situations.</li>
+      <p class="mt-1 text-sm text-slate-500">Оберіть правильний варіант у кожному пропуску. Підказки — у ваших відповідях вище.</p>
+      <ol class="mt-5 list-decimal space-y-5 pl-6 text-base sm:text-lg leading-loose">
+        <li>Sentences like <span class="rule-example">I will come if you invite me</span> are called <b>First Conditionals</b>. They are used for <select class="rule-select" data-question="r1" aria-label="rule 1"><option value="">оберіть…</option><option value="real">real, possible</option><option value="unreal">unreal, imaginary</option></select> situations in the future.</li>
+        <li>In First Conditionals, the verb after <i>if</i> is in a <select class="rule-select" data-question="r2" aria-label="rule 2"><option value="">оберіть…</option><option value="present">present</option><option value="future">future</option></select> tense, even though it refers to the future.</li>
+        <li>Sentences like <span class="rule-example">If I had the money, I would buy a huge house</span> are called <b>Second Conditionals</b>. They are used for <select class="rule-select" data-question="r3" aria-label="rule 3"><option value="">оберіть…</option><option value="unreal">unreal or unlikely</option><option value="real">real and possible</option></select> situations.</li>
+        <li>In Second Conditionals, the verb after <i>if</i> is in a <select class="rule-select" data-question="r4" aria-label="rule 4"><option value="">оберіть…</option><option value="past">past</option><option value="present">present</option></select> form, but it does not refer to the past. The main clause has <select class="rule-select" data-question="r5" aria-label="rule 5"><option value="">оберіть…</option><option value="would">would</option><option value="will">will</option></select> + verb.</li>
       </ol>
     </section>
 
@@ -110,8 +139,8 @@
       <div class="lock-overlay">
         <div>
           <div class="text-5xl">🔒</div>
-          <p class="mt-2 text-lg font-bold text-slate-800">Крок 4 · Правило та вправи</p>
-          <p class="mt-1 text-sm text-slate-600">Відкриється після правильного аналізу у кроках 2 і 3.</p>
+          <p class="mt-2 text-lg font-bold text-slate-800">Крок 5 · Правило та вправи</p>
+          <p class="mt-1 text-sm text-slate-600">Відкриється після правильного аналізу у кроках 2–4.</p>
         </div>
       </div>
     </section>

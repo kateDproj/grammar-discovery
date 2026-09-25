@@ -248,3 +248,14 @@ function seedIfEmpty_(def, rows) {
   if (sheet.getLastRow() > 1 || !rows.length) return;
   sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
 }
+
+/**
+ * Run from the Apps Script editor after the questions on the lesson pages change.
+ * Replaces the whole AnswerKey tab with the rows from ANSWER_KEY_SEED (Seed.gs).
+ */
+function syncAnswerKey() {
+  if (typeof ANSWER_KEY_SEED === 'undefined') throw new Error('Seed.gs with ANSWER_KEY_SEED is missing.');
+  const sheet = sheet_(SHEETS.answerKey);
+  if (sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+  sheet.getRange(2, 1, ANSWER_KEY_SEED.length, ANSWER_KEY_SEED[0].length).setValues(ANSWER_KEY_SEED);
+}
