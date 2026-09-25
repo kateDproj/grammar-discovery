@@ -16,8 +16,10 @@
 
   const state = {
     studentId: null,
-    maxAttempts: 0,
+    maxAttempts: null, // null = unlimited
     attemptsUsed: 0,
+    revealAfter: 5,
+    serverPractice: null,
     passed: false,
     busy: false,
   };
@@ -35,6 +37,7 @@
     },
   };
   const draftKey = () => 'gd:draft:' + LESSON_ID;
+  const OUTBOX_KEY = 'gd:outbox';
 
   // ------------------------------------------------------------ API
 
@@ -211,12 +214,16 @@
       a.textContent = '✅ Пройдено';
       a.className = 'rounded-full bg-emerald-50 px-3 py-0.5 font-medium text-emerald-700';
     } else {
-      const current = Math.min(state.attemptsUsed + 1, state.maxAttempts);
-      a.textContent = 'Спроба: ' + current + ' з ' + state.maxAttempts;
-      a.className = state.attemptsUsed >= state.maxAttempts
+      const current = state.maxAttempts ? Math.min(state.attemptsUsed + 1, state.maxAttempts) : state.attemptsUsed + 1;
+      a.textContent = 'Спроба: ' + current + (state.maxAttempts ? ' з ' + state.maxAttempts : '');
+      a.className = attemptsExhausted()
         ? 'rounded-full bg-red-50 px-3 py-0.5 font-medium text-red-700'
         : 'rounded-full bg-blue-50 px-3 py-0.5 font-medium text-blue-700';
     }
+  }
+
+  function attemptsExhausted() {
+    return Boolean(state.maxAttempts) && state.attemptsUsed >= state.maxAttempts;
   }
 
   async function onLogin(event) {
@@ -235,6 +242,8 @@
       state.maxAttempts = data.lesson.max_attempts;
       state.attemptsUsed = data.attempts_used;
       state.passed = data.passed;
+      state.revealAfter = data.lesson.practice_reveal_after || 5;
+      state.serverPractice = data.practice;
       store.set('gd:student_id', id);
 
       els.header.querySelector('[data-h="name"]').textContent = data.student.name;
@@ -246,9 +255,10 @@
       if (data.passed && data.reward) {
         unlock(data.reward, false);
         setStatus('Ви вже пройшли цей модуль. Матеріал розблоковано.', 'ok');
-      } else if (state.attemptsUsed >= state.maxAttempts) {
+      } else if (attemptsExhausted()) {
         lockOut();
       }
+      flushOutbox();
     } catch (err) {
       els.loginError.textContent = err.message;
     } finally {
@@ -299,6 +309,7 @@
 
       if (data.passed) {
         questionIds().forEach((id) => mark(document.querySelector('[data-question="' + id + '"]'), 'is-right'));
+        state.serverPractice = data.practice || {};
         celebrate();
         unlock(data.reward, true);
         setStatus('Чудово! Усі відповіді правильні — правило розблоковано ⬇️', 'ok');
@@ -310,11 +321,13 @@
         if (data.wrong.indexOf(id) === -1) mark(el, 'is-right');
         else mark(el, 'is-wrong', 'Ще раз перечитайте приклад у тексті вгорі.');
       });
-      const left = state.maxAttempts - state.attemptsUsed;
-      if (left <= 0) {
+      if (attemptsExhausted()) {
         lockOut();
-      } else {
+      } else if (state.maxAttempts) {
+        const left = state.maxAttempts - state.attemptsUsed;
         setStatus('Неправильних відповідей: ' + data.wrong.length + '. Залишилось спроб: ' + left + '.', 'error');
+      } else {
+        setStatus('Неправильних відповідей: ' + data.wrong.length + '. Виправте їх і перевірте ще раз.', 'error');
       }
     } catch (err) {
       setStatus(err.message, 'error');
@@ -322,7 +335,7 @@
     } finally {
       state.busy = false;
       els.checkButton.textContent = 'Перевірити';
-      if (!state.passed && state.attemptsUsed < state.maxAttempts) els.checkButton.disabled = false;
+      if (!state.passed && !attemptsExhausted()) els.checkButton.disabled = false;
     }
   }
 
@@ -364,11 +377,11 @@
     return String(s).toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, ' ').trim();
   }
 
-  // Answers can be revealed only after the student has tried this many times.
-  const REVEAL_AFTER_CHECKS = 2;
   // A model answer opens only after the student has written at least this much.
   const MIN_WRITING_LENGTH = 10;
   const GAP_STATES = ['is-right', 'is-wrong', 'is-missing', 'is-revealed'];
+  // Errors after which a queued practice record is kept and sent again later.
+  const RETRYABLE_ERRORS = ['network', 'bad_response', 'server_error', 'server_setup'];
 
   const practiceKey = () => 'gd:practice:' + LESSON_ID + ':' + state.studentId;
 
@@ -386,16 +399,38 @@
     else gap.readOnly = true;
   }
 
+  function exerciseFields(section) {
+    return Array.from(section.querySelectorAll('input, select, textarea'));
+  }
+
+  /** Answers keyed by the 1-based position of the field inside the exercise. */
+  function exerciseAnswers(section) {
+    const answers = {};
+    const revealed = [];
+    exerciseFields(section).forEach((f, i) => {
+      answers[i + 1] = f.value;
+      if (f.classList.contains('is-revealed')) revealed.push(String(i + 1));
+    });
+    return { answers: answers, revealed: revealed };
+  }
+
+  function exerciseScore(section) {
+    const gaps = Array.from(section.querySelectorAll('[data-answer]'));
+    if (!gaps.length) return 0;
+    return Math.round((gaps.filter((g) => g.classList.contains('is-right')).length / gaps.length) * 100);
+  }
+
   function renderExerciseResult(section) {
+    const result = section.querySelector('[data-exercise-result]');
+    const revealButton = section.querySelector('[data-reveal-exercise]');
+    if (!result || !revealButton) return;
     const gaps = Array.from(section.querySelectorAll('[data-answer]'));
     const checks = Number(section.dataset.checks || 0);
     const revealed = gaps.filter((g) => g.classList.contains('is-revealed')).length;
     const right = gaps.filter((g) => g.classList.contains('is-right')).length;
     const done = right + revealed === gaps.length;
-    const result = section.querySelector('[data-exercise-result]');
-    const revealButton = section.querySelector('[data-reveal-exercise]');
 
-    revealButton.hidden = done || checks < REVEAL_AFTER_CHECKS;
+    revealButton.hidden = done || checks < state.revealAfter;
     if (!checks) {
       result.textContent = '';
       return;
@@ -403,7 +438,10 @@
     let text = right + ' / ' + gaps.length;
     if (revealed) text += ' · показано відповідей: ' + revealed;
     else if (done) text = '✅ ' + text;
-    else if (checks < REVEAL_AFTER_CHECKS) text += ' · Виправте червоні пропуски й перевірте ще раз.';
+    else if (checks < state.revealAfter) {
+      text += ' · Виправте червоні пропуски й перевірте ще раз. Відповіді можна буде подивитися після ' +
+        state.revealAfter + '-ї перевірки.';
+    }
     result.textContent = text;
     result.className = 'exercise__result ' + (done && !revealed ? 'text-emerald-700' : 'text-amber-700');
   }
@@ -421,12 +459,12 @@
     section.dataset.checks = Number(section.dataset.checks || 0) + 1;
     gaps.forEach((g) => setGapState(g, isCorrect(g) ? 'is-right' : 'is-wrong'));
     renderExerciseResult(section);
-    savePractice();
+    recordPractice(section, 'check');
   }
 
   /** Reveals only the gaps that are still wrong; correct answers stay the student's own. */
   function revealExercise(section) {
-    if (Number(section.dataset.checks || 0) < REVEAL_AFTER_CHECKS) return;
+    if (Number(section.dataset.checks || 0) < state.revealAfter) return;
     section.querySelectorAll('[data-answer]').forEach((gap) => {
       if (gap.classList.contains('is-right') || gap.classList.contains('is-revealed')) return;
       gap.value = gap.dataset.answer.split('|')[0];
@@ -434,9 +472,10 @@
       lockRevealedGap(gap);
     });
     renderExerciseResult(section);
-    savePractice();
+    recordPractice(section, 'reveal');
   }
 
+  /** "Send and show the model answer": allowed only after the student has written their own version. */
   function onModelAnswerToggle(event) {
     const summary = event.target.closest('.model-answer > summary');
     if (!summary) return;
@@ -454,17 +493,81 @@
       }
       note.textContent = 'Спершу напишіть свій варіант.';
       writing.focus();
-    } else if (note) {
-      note.remove();
+      return;
+    }
+    if (note) note.remove();
+    const section = details.closest('[data-exercise-id]');
+    if (section) recordPractice(section, 'submit');
+  }
+
+  // ------------------------------------------------------------ practice recording
+  // Every check / reveal / submit is queued in an outbox (kept in the browser) and sent
+  // to the Practice tab. If the connection is lost, the queue is sent later.
+
+  let outbox = store.get(OUTBOX_KEY) || [];
+  let flushing = false;
+
+  function recordPractice(section, event) {
+    const data = exerciseAnswers(section);
+    outbox.push({
+      action: 'practice',
+      student_id: state.studentId,
+      lesson_id: LESSON_ID,
+      exercise_id: section.dataset.exerciseId,
+      event: event,
+      check_number: Number(section.dataset.checks || 0),
+      score: exerciseScore(section),
+      answers: data.answers,
+      revealed: data.revealed,
+      client_time: new Date().toISOString(),
+    });
+    store.set(OUTBOX_KEY, outbox);
+    savePractice();
+    flushOutbox();
+  }
+
+  async function flushOutbox() {
+    if (flushing) return;
+    flushing = true;
+    try {
+      while (outbox.length) {
+        renderSyncStatus('sending');
+        try {
+          await api('POST', outbox[0]);
+        } catch (err) {
+          if (RETRYABLE_ERRORS.indexOf(err.code) !== -1) break;
+          // Rejected by the server (e.g. unknown student): drop it so it doesn't block the queue.
+        }
+        outbox.shift();
+        store.set(OUTBOX_KEY, outbox);
+      }
+    } finally {
+      flushing = false;
+      renderSyncStatus(outbox.length ? 'pending' : 'saved');
     }
   }
 
-  // ------------------------------------------------------------ practice progress (saved per student in this browser)
+  function renderSyncStatus(status) {
+    if (!els.syncStatus) return;
+    const texts = {
+      sending: '⏳ Зберігаємо відповіді…',
+      saved: '☁️ Відповіді збережено',
+      pending: "📴 Не надіслано: " + outbox.length + ". Надішлемо, коли з'явиться інтернет.",
+    };
+    els.syncStatus.textContent = texts[status];
+    els.syncStatus.className = 'sync-status ' + (status === 'pending' ? 'sync-status--pending' : '');
+    els.syncStatus.hidden = false;
+  }
+
+  window.addEventListener('online', flushOutbox);
+
+  // ------------------------------------------------------------ practice progress (restore on return)
 
   function practiceFields() {
     return Array.from(els.reward.querySelectorAll('input, select, textarea'));
   }
 
+  /** Local copy for this browser, so typing that was never checked is kept too. */
   function savePractice() {
     if (!state.studentId) return;
     store.set(practiceKey(), {
@@ -472,27 +575,60 @@
         v: f.value,
         s: GAP_STATES.find((c) => f.classList.contains(c)) || '',
       })),
-      checks: Array.from(els.reward.querySelectorAll('[data-exercise]')).map((s) => Number(s.dataset.checks || 0)),
+      checks: Array.from(els.reward.querySelectorAll('[data-exercise-id]')).map((s) => Number(s.dataset.checks || 0)),
+    });
+  }
+
+  function applyLocalPractice(saved) {
+    practiceFields().forEach((f, i) => {
+      f.value = saved.fields[i].v;
+      setGapState(f, saved.fields[i].s);
+      if (saved.fields[i].s === 'is-revealed') lockRevealedGap(f);
+    });
+    els.reward.querySelectorAll('[data-exercise-id]').forEach((s, i) => {
+      s.dataset.checks = (saved.checks && saved.checks[i]) || 0;
+    });
+  }
+
+  /** Server copy (any device): the latest recorded state of each exercise. */
+  function applyServerPractice(server) {
+    els.reward.querySelectorAll('[data-exercise-id]').forEach((section) => {
+      const entry = server[section.dataset.exerciseId];
+      if (!entry) return;
+      const checks = entry.check_number || 0;
+      section.dataset.checks = checks;
+      exerciseFields(section).forEach((f, i) => {
+        const value = entry.answers[i + 1];
+        if (value != null) f.value = value;
+        if (!f.matches('[data-answer]')) return;
+        if (entry.revealed.indexOf(String(i + 1)) !== -1) {
+          setGapState(f, 'is-revealed');
+          lockRevealedGap(f);
+        } else if (checks && f.value.trim()) {
+          setGapState(f, isCorrect(f) ? 'is-right' : 'is-wrong');
+        }
+      });
     });
   }
 
   function restorePractice() {
-    const saved = store.get(practiceKey());
-    const fields = practiceFields();
-    if (saved && saved.fields && saved.fields.length === fields.length) {
-      fields.forEach((f, i) => {
-        f.value = saved.fields[i].v;
-        setGapState(f, saved.fields[i].s);
-        if (saved.fields[i].s === 'is-revealed') lockRevealedGap(f);
-      });
-      els.reward.querySelectorAll('[data-exercise]').forEach((s, i) => {
-        s.dataset.checks = (saved.checks && saved.checks[i]) || 0;
-      });
-    }
-    els.reward.querySelectorAll('[data-exercise]').forEach(renderExerciseResult);
+    const local = store.get(practiceKey());
+    const localFits = local && local.fields && local.fields.length === practiceFields().length;
+    const server = state.serverPractice || {};
+    const hasServer = Object.keys(server).length > 0;
+    const pendingHere = outbox.some((o) => o.lesson_id === LESSON_ID && o.student_id === state.studentId);
+    // Prefer this browser's copy while it has unsent records; otherwise the server is the source of truth.
+    if (localFits && (pendingHere || !hasServer)) applyLocalPractice(local);
+    else if (hasServer) applyServerPractice(server);
+    els.reward.querySelectorAll('[data-exercise-id]').forEach(renderExerciseResult);
   }
 
   function initPractice() {
+    els.syncStatus = document.createElement('div');
+    els.syncStatus.hidden = true;
+    els.syncStatus.setAttribute('role', 'status');
+    document.body.appendChild(els.syncStatus);
+
     restorePractice();
     els.reward.addEventListener('input', (event) => {
       const f = event.target;
@@ -500,6 +636,7 @@
       savePractice();
     });
     els.reward.addEventListener('change', savePractice);
+    if (outbox.length) flushOutbox();
   }
 
   document.addEventListener('click', (event) => {

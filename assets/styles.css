@@ -256,3 +256,21 @@ body { background: #f8fafc; }
 .btn-check:hover { background: #1d4ed8; }
 .btn-reveal { background: #f1f5f9; color: #334155; }
 .btn-reveal:hover { background: #e2e8f0; }
+
+/* ---------- practice sync indicator */
+.sync-status {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  max-width: calc(100% - 2rem);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.08);
+}
+.sync-status--pending { color: #92400e; background: #fffbeb; border-color: #fcd34d; }

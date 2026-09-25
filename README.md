@@ -10,7 +10,7 @@ Content is adapted from *Karpiuk O. English (11th grade), 2019*: Conditionals I 
 |---|---|---|
 | Frontend | GitHub Pages (this repo) | Static HTML + Tailwind CSS (CDN) + vanilla JS, no build step |
 | Backend | Google Apps Script Web App (`gas/`) | `doGet` (login) and `doPost` (answer check) |
-| Database | Google Sheets | Tabs `Students`, `Lessons`, `Attempts`, hidden `AnswerKey` |
+| Database | Google Sheets | Tabs `Students`, `Lessons`, `Attempts`, `Practice`, hidden `AnswerKey` |
 
 ### Lesson flow
 1. **Observation** – a short text with the target structures highlighted.
@@ -21,7 +21,7 @@ Content is adapted from *Karpiuk O. English (11th grade), 2019*: Conditionals I 
 ### Anti-cheating design
 - Correct answers are stored **only** in the spreadsheet (`AnswerKey` tab), never in this repository or in the page source.
 - The grammar reference is not present in the page until the server sends it.
-- Attempts are counted on the server (`max_attempts` per lesson in the `Lessons` tab).
+- Attempts are counted on the server. `max_attempts` per lesson in the `Lessons` tab is empty by default (unlimited); a teacher can set a limit.
 - Limitations: students identify themselves by ID only (no password), and the practice exercises inside the reward are self-check exercises whose keys are delivered with the reward.
 
 ## Files
@@ -35,6 +35,7 @@ Content is adapted from *Karpiuk O. English (11th grade), 2019*: Conditionals I 
 
 ## Teacher guide
 - **Add students:** add rows to the `Students` tab (`student_id`, `student_name`, `class`).
-- **Give an extra attempt:** increase `max_attempts` for the lesson, or delete the student's rows in `Attempts`.
+- **Limit discovery attempts:** set `max_attempts` for the lesson (empty = unlimited). To give a student an extra attempt, raise it or delete their rows in `Attempts`.
+- **Practice answers:** the `Practice` tab has one row per check, reveal or written submission, with the answers and score. `practice_reveal_after` (default 5) sets after how many checks students may reveal the answers.
 - **See progress:** the `Attempts` tab has one row per check with the score (%), the answers and whether the attempt passed.
 - **Change the answer key:** unhide the `AnswerKey` tab. Several accepted answers can be separated with `|`.
