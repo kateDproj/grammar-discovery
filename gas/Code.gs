@@ -15,6 +15,10 @@
  *       "revealed":["2","4"],"client_time":"..."}
  *      -> records one practice event in the Practice tab (only after the lesson is unlocked).
  *
+ * POST {"action":"admin","teacher_id":"T-...","op":"overview|add_student|update_student|delete_student|
+ *       save_lesson|reset_progress", ...}
+ *      -> teacher control center (teacher.html). Every op requires a teacher ID from the Teachers tab.
+ *
  * POST bodies are sent as text/plain so the browser skips the CORS preflight.
  * The correct discovery answers live ONLY in the AnswerKey tab of the spreadsheet,
  * never in this file or in the website code.
@@ -22,7 +26,10 @@
 
 const SHEETS = {
   students: { name: 'Students', headers: ['student_id', 'student_name', 'class'] },
-  lessons: { name: 'Lessons', headers: ['lesson_id', 'lesson_title', 'max_attempts', 'practice_reveal_after'] },
+  lessons: {
+    name: 'Lessons',
+    headers: ['lesson_id', 'lesson_title', 'max_attempts', 'practice_reveal_after', 'practice_max_checks'],
+  },
   attempts: {
     name: 'Attempts',
     headers: ['timestamp', 'student_id', 'lesson_id', 'attempt_number', 'score', 'answers_json', 'passed'],
@@ -33,6 +40,7 @@ const SHEETS = {
       'answers_json', 'revealed_items', 'client_time'],
   },
   answerKey: { name: 'AnswerKey', headers: ['lesson_id', 'question_id', 'correct_answer'] },
+  teachers: { name: 'Teachers', headers: ['teacher_id', 'teacher_name'] },
 };
 
 const MAX_ANSWER_LENGTH = 200;
@@ -61,6 +69,7 @@ function doPost(e) {
     }
     if (body.action === 'check') return check_(body);
     if (body.action === 'practice') return practice_(body);
+    if (body.action === 'admin') return admin_(body);
     throw apiError_('unknown_action', 'Невідома дія.');
   });
 }
@@ -76,7 +85,8 @@ function login_(studentId, lessonId) {
       id: ctx.lesson.lesson_id,
       title: ctx.lesson.lesson_title,
       max_attempts: ctx.maxAttempts, // null = unlimited
-      practice_reveal_after: ctx.practiceRevealAfter,
+      practice_reveal_after: ctx.practiceRevealAfter, // null = never
+      practice_max_checks: ctx.practiceMaxChecks, // null = unlimited
     },
     attempts_used: ctx.attempts.length,
     passed: ctx.passed,
@@ -170,6 +180,18 @@ function practice_(body) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
+    // Limits are enforced here too, not only in the browser.
+    if (event === 'check' || event === 'reveal') {
+      const checksDone = readTable_(SHEETS.practice).filter((row) =>
+        row.student_id === ctx.student.student_id && row.lesson_id === ctx.lesson.lesson_id &&
+        row.exercise_id === exerciseId && row.event === 'check').length;
+      if (event === 'check' && ctx.practiceMaxChecks && checksDone >= ctx.practiceMaxChecks) {
+        throw apiError_('practice_limit', 'Ліміт перевірок для цієї вправи вичерпано.');
+      }
+      if (event === 'reveal' && (ctx.practiceRevealAfter === null || checksDone < ctx.practiceRevealAfter)) {
+        throw apiError_('practice_reveal_locked', 'Відповіді для цієї вправи ще не можна подивитися.');
+      }
+    }
     sheet_(SHEETS.practice).appendRow([
       new Date(),
       ctx.student.student_id,
@@ -188,6 +210,157 @@ function practice_(body) {
   return { ok: true };
 }
 
+// ---------------------------------------------------------------- teacher control center
+
+const ADMIN_OPS = ['overview', 'add_student', 'update_student', 'delete_student', 'save_lesson', 'reset_progress'];
+const RESET_SCOPES = ['all', 'discovery', 'practice'];
+
+function admin_(body) {
+  const teacher = authTeacher_(body.teacher_id);
+  const op = String(body.op || '');
+  if (ADMIN_OPS.indexOf(op) === -1) throw apiError_('unknown_action', 'Невідома дія.');
+  if (op === 'overview') return overview_(teacher);
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    if (op === 'add_student') addStudent_(body.student || {});
+    if (op === 'update_student') updateStudent_(body.student || {});
+    if (op === 'delete_student') deleteStudent_(body.student_id);
+    if (op === 'save_lesson') saveLesson_(body.lesson || {});
+    if (op === 'reset_progress') resetProgress_(body.student_id, body.lesson_id, body.scope);
+  } finally {
+    lock.releaseLock();
+  }
+  return overview_(teacher);
+}
+
+function authTeacher_(teacherId) {
+  const tid = String(teacherId == null ? '' : teacherId).trim();
+  if (!tid) throw apiError_('not_teacher', 'Введіть ID вчителя.');
+  const teacher = readTable_(SHEETS.teachers).find((row) => row.teacher_id === tid);
+  if (!teacher) throw apiError_('not_teacher', 'Невірний ID вчителя.');
+  return teacher;
+}
+
+/** Everything the control center needs, in one response. */
+function overview_(teacher) {
+  const hasPractice = Boolean(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.practice.name));
+  const lessons = readTable_(SHEETS.lessons).map((lesson) => {
+    const settings = lessonSettings_(lesson);
+    return {
+      lesson_id: lesson.lesson_id,
+      lesson_title: lesson.lesson_title,
+      max_attempts: settings.maxAttempts,
+      practice_reveal_after: settings.practiceRevealAfter,
+      practice_max_checks: settings.practiceMaxChecks,
+    };
+  });
+  const rewards = {};
+  lessons.forEach((l) => (rewards[l.lesson_id] = reward_(l.lesson_id)));
+  return {
+    ok: true,
+    teacher: { name: teacher.teacher_name },
+    students: readTable_(SHEETS.students),
+    lessons: lessons,
+    attempts: readTable_(SHEETS.attempts),
+    practice: hasPractice ? readTable_(SHEETS.practice) : [],
+    answer_key: readTable_(SHEETS.answerKey),
+    rewards: rewards,
+  };
+}
+
+function addStudent_(student) {
+  const id = String(student.student_id == null ? '' : student.student_id).trim();
+  if (!/^[A-Za-z0-9_-]{1,20}$/.test(id)) {
+    throw apiError_('bad_request', 'ID учня: 1–20 символів, лише латинські літери, цифри, «-» або «_».');
+  }
+  if (readTable_(SHEETS.students).some((row) => row.student_id === id)) {
+    throw apiError_('duplicate', 'Учень з таким ID вже існує.');
+  }
+  if (readTable_(SHEETS.teachers).some((row) => row.teacher_id === id)) {
+    throw apiError_('duplicate', 'Цей ID вже використовується.');
+  }
+  const name = cleanCell_(student.student_name);
+  if (!name) throw apiError_('bad_request', "Введіть ім'я учня.");
+  writeRow_(SHEETS.students, null, { student_id: id, student_name: name, class: cleanCell_(student.class) });
+}
+
+function updateStudent_(student) {
+  const row = findRow_(SHEETS.students, 'student_id', student.student_id);
+  const name = cleanCell_(student.student_name);
+  if (!name) throw apiError_('bad_request', "Введіть ім'я учня.");
+  writeRow_(SHEETS.students, row._row, { student_name: name, class: cleanCell_(student.class) });
+}
+
+/** Removes the student from the list; their attempts stay in the records. */
+function deleteStudent_(studentId) {
+  const row = findRow_(SHEETS.students, 'student_id', studentId);
+  sheet_(SHEETS.students).deleteRow(row._row);
+}
+
+function saveLesson_(lesson) {
+  const row = findRow_(SHEETS.lessons, 'lesson_id', lesson.lesson_id);
+  const optionalPositive = (v, label) => {
+    const text = String(v == null ? '' : v).trim();
+    if (text === '') return '';
+    if (!/^[0-9]{1,3}$/.test(text) || Number(text) < 1) throw apiError_('bad_request', label + ': ціле число від 1 або порожньо.');
+    return Number(text);
+  };
+  const reveal = String(lesson.practice_reveal_after == null ? '' : lesson.practice_reveal_after).trim().toLowerCase();
+  if (reveal !== 'never' && !/^[0-9]{1,3}$/.test(reveal)) {
+    throw apiError_('bad_request', 'Показ відповідей: ціле число від 0 або «never».');
+  }
+  writeRow_(SHEETS.lessons, row._row, {
+    max_attempts: optionalPositive(lesson.max_attempts, 'Спроби відкриття правила'),
+    practice_max_checks: optionalPositive(lesson.practice_max_checks, 'Ліміт перевірок'),
+    practice_reveal_after: reveal === 'never' ? 'never' : Number(reveal),
+  });
+}
+
+function resetProgress_(studentId, lessonId, scope) {
+  const sid = String(studentId == null ? '' : studentId).trim();
+  const lid = String(lessonId == null ? '' : lessonId).trim();
+  if (RESET_SCOPES.indexOf(scope) === -1) throw apiError_('bad_request', 'Некоректна дія.');
+  const tabs = [];
+  if (scope !== 'practice') tabs.push(SHEETS.attempts);
+  if (scope !== 'discovery' && SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.practice.name)) {
+    tabs.push(SHEETS.practice);
+  }
+  tabs.forEach((def) => {
+    const rows = readTable_(def).filter((r) => r.student_id === sid && r.lesson_id === lid).map((r) => r._row);
+    const sheet = sheet_(def);
+    rows.sort((a, b) => b - a).forEach((r) => sheet.deleteRow(r)); // bottom-up keeps row numbers valid
+  });
+}
+
+function findRow_(def, column, value) {
+  const v = String(value == null ? '' : value).trim();
+  const row = readTable_(def).find((r) => r[column] === v);
+  if (!row) throw apiError_('not_found', 'Запис не знайдено. Оновіть сторінку.');
+  return row;
+}
+
+/** Writes the given fields by header name; rowNumber null appends a new row. */
+function writeRow_(def, rowNumber, fields) {
+  const sheet = sheet_(def);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map((h) => String(h).trim());
+  if (rowNumber === null) {
+    sheet.appendRow(headers.map((h) => (h in fields ? fields[h] : '')));
+    return;
+  }
+  Object.keys(fields).forEach((k) => {
+    const col = headers.indexOf(k) + 1;
+    if (col > 0) sheet.getRange(rowNumber, col).setValue(fields[k]);
+  });
+}
+
+/** Short plain text for a cell; a leading = + - @ is escaped so it can never become a formula. */
+function cleanCell_(value) {
+  const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim().slice(0, 100);
+  return /^[=+\-@]/.test(text) ? "'" + text : text;
+}
+
 // ---------------------------------------------------------------- helpers
 
 function loadContext_(studentId, lessonId) {
@@ -204,19 +377,36 @@ function loadContext_(studentId, lessonId) {
   const attempts = readTable_(SHEETS.attempts).filter((row) => row.student_id === sid && row.lesson_id === lid);
   const passed = attempts.some((row) => row.passed.toUpperCase() === 'TRUE');
 
-  // An empty (or 0) max_attempts means unlimited attempts.
-  const maxAttempts = toInt_(lesson.max_attempts, 0) > 0 ? toInt_(lesson.max_attempts, 0) : null;
-  const practiceRevealAfter = toInt_(lesson.practice_reveal_after, 0) > 0
-    ? toInt_(lesson.practice_reveal_after, 0)
-    : DEFAULT_PRACTICE_REVEAL_AFTER;
+  const settings = lessonSettings_(lesson);
 
   return {
     student: student,
     lesson: lesson,
     attempts: attempts,
-    maxAttempts: maxAttempts,
-    practiceRevealAfter: practiceRevealAfter,
+    maxAttempts: settings.maxAttempts,
+    practiceRevealAfter: settings.practiceRevealAfter,
+    practiceMaxChecks: settings.practiceMaxChecks,
     passed: passed,
+  };
+}
+
+/**
+ * Lesson settings from the Lessons tab:
+ *   max_attempts          empty = unlimited discovery attempts
+ *   practice_reveal_after checks needed before answers can be revealed
+ *                         (0 = right away, "never" = never, empty = default 5)
+ *   practice_max_checks   empty = unlimited checks per practice exercise
+ */
+function lessonSettings_(lesson) {
+  const positive = (v) => (toInt_(v, 0) > 0 ? toInt_(v, 0) : null);
+  const reveal = String(lesson.practice_reveal_after || '').trim().toLowerCase();
+  let practiceRevealAfter = DEFAULT_PRACTICE_REVEAL_AFTER;
+  if (reveal === 'never') practiceRevealAfter = null;
+  else if (reveal !== '' && toInt_(reveal, -1) >= 0) practiceRevealAfter = toInt_(reveal, 0);
+  return {
+    maxAttempts: positive(lesson.max_attempts),
+    practiceRevealAfter: practiceRevealAfter,
+    practiceMaxChecks: positive(lesson.practice_max_checks),
   };
 }
 
@@ -243,14 +433,20 @@ function latestPractice_(studentId, lessonId) {
   return latest;
 }
 
-/** Reads a tab into an array of objects keyed by the header row. All values are trimmed strings. */
+/**
+ * Reads a tab into an array of objects keyed by the header row. Values are trimmed strings
+ * (dates as ISO strings); _row is the row number in the sheet.
+ */
 function readTable_(def) {
   const values = sheet_(def).getDataRange().getValues();
   if (values.length < 2) return [];
   const headers = values[0].map((h) => String(h).trim());
-  return values.slice(1).map((row) => {
-    const obj = {};
-    headers.forEach((h, i) => (obj[h] = String(row[i] == null ? '' : row[i]).trim()));
+  return values.slice(1).map((row, i) => {
+    const obj = { _row: i + 2 };
+    headers.forEach((h, j) => {
+      const v = row[j];
+      obj[h] = v instanceof Date ? v.toISOString() : String(v == null ? '' : v).trim();
+    });
     return obj;
   });
 }
@@ -316,14 +512,15 @@ function setup() {
   Object.keys(SHEETS).forEach((k) => ensureSheet_(ss, SHEETS[k]));
 
   seedIfEmpty_(SHEETS.lessons, [
-    ['mod1_conditionals', 'Conditionals I & II', '', DEFAULT_PRACTICE_REVEAL_AFTER],
-    ['mod2_reported', 'Reported Speech', '', DEFAULT_PRACTICE_REVEAL_AFTER],
+    ['mod1_conditionals', 'Conditionals I & II', '', DEFAULT_PRACTICE_REVEAL_AFTER, ''],
+    ['mod2_reported', 'Reported Speech', '', DEFAULT_PRACTICE_REVEAL_AFTER, ''],
   ]);
   seedIfEmpty_(SHEETS.students, [
     [101, 'Test Student', '11-А'],
   ]);
   // The answer key is seeded from Seed.gs, which is uploaded to Apps Script but kept out of the public repo.
   if (typeof ANSWER_KEY_SEED !== 'undefined') seedIfEmpty_(SHEETS.answerKey, ANSWER_KEY_SEED);
+  if (typeof TEACHER_SEED !== 'undefined') seedIfEmpty_(SHEETS.teachers, TEACHER_SEED);
 
   // Remove the blank default tab ("Sheet1" / "Аркуш1") if it is still empty.
   ss.getSheets().forEach((sheet) => {
@@ -336,12 +533,20 @@ function setup() {
 }
 
 /**
- * One-time upgrade for spreadsheets created before practice recording existed:
- * adds the Practice tab and new columns, makes discovery attempts unlimited,
- * sets the practice reveal threshold to 5 and refreshes the answer key.
+ * Upgrade for spreadsheets created with an earlier version. Safe to run more than once:
+ * adds new tabs (Practice, Teachers) and columns and refreshes the answer key. Only the
+ * first time practice settings are added, it also makes discovery attempts unlimited and
+ * sets the practice reveal threshold to 5.
  */
 function upgrade() {
+  const lessonsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.lessons.name);
+  const hadPracticeSettings = Boolean(lessonsSheet) && lessonsSheet.getLastColumn() > 0 &&
+    lessonsSheet.getRange(1, 1, 1, lessonsSheet.getLastColumn()).getValues()[0].map(String)
+      .indexOf('practice_reveal_after') !== -1;
   setup();
+  if (typeof ANSWER_KEY_SEED !== 'undefined') syncAnswerKey();
+  if (hadPracticeSettings) return;
+
   const sheet = sheet_(SHEETS.lessons);
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
   const maxCol = headers.indexOf('max_attempts') + 1;
@@ -352,7 +557,6 @@ function upgrade() {
     const reveal = sheet.getRange(2, revealCol, rows, 1);
     reveal.setValues(reveal.getValues().map((r) => [r[0] === '' ? DEFAULT_PRACTICE_REVEAL_AFTER : r[0]]));
   }
-  if (typeof ANSWER_KEY_SEED !== 'undefined') syncAnswerKey();
 }
 
 /**

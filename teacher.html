@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Панель вчителя · Grammar Discovery</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/teacher.css">
+</head>
+<body class="min-h-screen text-slate-800 antialiased">
+
+  <!-- Login -->
+  <div id="t-login" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
+    <form class="w-full max-w-sm rounded-2xl bg-white p-6 sm:p-8 shadow-2xl" novalidate>
+      <div class="text-4xl mb-3">🧑‍🏫</div>
+      <h1 class="text-2xl font-bold text-slate-900">Панель вчителя</h1>
+      <p class="mt-1 text-sm text-slate-500">Введіть ваш ID вчителя.</p>
+      <label class="block mt-5">
+        <span class="sr-only">Teacher ID</span>
+        <input name="teacher_id" type="password" autocomplete="current-password" required
+          class="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-lg font-semibold tracking-wider focus:border-blue-500 focus:outline-none">
+      </label>
+      <p data-login-error class="mt-3 min-h-[1.25rem] text-sm font-medium text-red-600" role="alert"></p>
+      <button type="submit" class="mt-2 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-60">Увійти</button>
+      <a href="index.html" class="mt-4 block text-center text-sm text-slate-500 hover:text-slate-700">← На головну</a>
+    </form>
+  </div>
+
+  <!-- App -->
+  <header class="app-header border-b border-slate-200 bg-white/95 backdrop-blur" id="t-header" hidden>
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+      <span class="font-bold text-slate-900">🧑‍🏫 Панель вчителя</span>
+      <nav class="flex flex-wrap gap-1" aria-label="Розділи">
+        <button type="button" class="t-tab" data-view="overview">Огляд</button>
+        <button type="button" class="t-tab" data-view="students">Учні</button>
+        <button type="button" class="t-tab" data-view="lessons">Налаштування модулів</button>
+      </nav>
+      <div class="ml-auto flex items-center gap-3 text-sm">
+        <span class="text-slate-500" data-teacher-name></span>
+        <button type="button" class="t-btn t-btn--ghost" data-refresh title="Оновити дані">↻ Оновити</button>
+        <button type="button" class="t-btn t-btn--ghost" data-logout>Вийти</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="t-main" class="mx-auto max-w-6xl px-4 py-6 sm:py-8" aria-live="polite"></main>
+
+  <div id="t-toast" class="t-toast" role="status" hidden></div>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/teacher.js"></script>
+</body>
+</html>

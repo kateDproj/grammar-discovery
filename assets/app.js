@@ -18,7 +18,8 @@
     studentId: null,
     maxAttempts: null, // null = unlimited
     attemptsUsed: 0,
-    revealAfter: 5,
+    revealAfter: 5, // checks before practice answers can be revealed; null = never
+    practiceMaxChecks: null, // checks allowed per practice exercise; null = unlimited
     serverPractice: null,
     passed: false,
     busy: false,
@@ -242,7 +243,8 @@
       state.maxAttempts = data.lesson.max_attempts;
       state.attemptsUsed = data.attempts_used;
       state.passed = data.passed;
-      state.revealAfter = data.lesson.practice_reveal_after || 5;
+      state.revealAfter = data.lesson.practice_reveal_after === undefined ? 5 : data.lesson.practice_reveal_after;
+      state.practiceMaxChecks = data.lesson.practice_max_checks || null;
       state.serverPractice = data.practice;
       store.set('gd:student_id', id);
 
@@ -420,33 +422,52 @@
     return Math.round((gaps.filter((g) => g.classList.contains('is-right')).length / gaps.length) * 100);
   }
 
+  function canReveal(checks) {
+    return state.revealAfter !== null && checks >= state.revealAfter;
+  }
+
+  function checksLeft(checks) {
+    return state.practiceMaxChecks ? Math.max(0, state.practiceMaxChecks - checks) : Infinity;
+  }
+
   function renderExerciseResult(section) {
     const result = section.querySelector('[data-exercise-result]');
     const revealButton = section.querySelector('[data-reveal-exercise]');
-    if (!result || !revealButton) return;
+    const checkButton = section.querySelector('[data-check-exercise]');
+    if (!result || !revealButton || !checkButton) return;
     const gaps = Array.from(section.querySelectorAll('[data-answer]'));
     const checks = Number(section.dataset.checks || 0);
     const revealed = gaps.filter((g) => g.classList.contains('is-revealed')).length;
     const right = gaps.filter((g) => g.classList.contains('is-right')).length;
     const done = right + revealed === gaps.length;
+    const left = checksLeft(checks);
 
-    revealButton.hidden = done || checks < state.revealAfter;
-    if (!checks) {
-      result.textContent = '';
-      return;
+    revealButton.hidden = done || !canReveal(checks);
+    checkButton.disabled = done || left === 0;
+    gaps.forEach((g) => {
+      if (left === 0 && !g.classList.contains('is-revealed')) lockRevealedGap(g);
+    });
+
+    const parts = [];
+    if (checks) parts.push((done && !revealed ? '✅ ' : '') + right + ' / ' + gaps.length);
+    if (revealed) parts.push('показано відповідей: ' + revealed);
+    if (!done) {
+      if (left === 0) {
+        parts.push('Ліміт перевірок вичерпано.');
+      } else {
+        if (checks) parts.push('Виправте червоні пропуски й перевірте ще раз.');
+        if (left !== Infinity) parts.push('Залишилось перевірок: ' + left + '.');
+        if (state.revealAfter !== null && !canReveal(checks) && state.revealAfter <= checks + left) {
+          parts.push('Відповіді можна буде подивитися після ' + state.revealAfter + '-ї перевірки.');
+        }
+      }
     }
-    let text = right + ' / ' + gaps.length;
-    if (revealed) text += ' · показано відповідей: ' + revealed;
-    else if (done) text = '✅ ' + text;
-    else if (checks < state.revealAfter) {
-      text += ' · Виправте червоні пропуски й перевірте ще раз. Відповіді можна буде подивитися після ' +
-        state.revealAfter + '-ї перевірки.';
-    }
-    result.textContent = text;
+    result.textContent = parts.join(' · ');
     result.className = 'exercise__result ' + (done && !revealed ? 'text-emerald-700' : 'text-amber-700');
   }
 
   function checkExercise(section) {
+    if (checksLeft(Number(section.dataset.checks || 0)) === 0) return;
     const gaps = Array.from(section.querySelectorAll('[data-answer]')).filter((g) => !g.classList.contains('is-revealed'));
     const empty = gaps.filter((g) => !g.value.trim());
     if (empty.length) {
@@ -464,7 +485,7 @@
 
   /** Reveals only the gaps that are still wrong; correct answers stay the student's own. */
   function revealExercise(section) {
-    if (Number(section.dataset.checks || 0) < state.revealAfter) return;
+    if (!canReveal(Number(section.dataset.checks || 0))) return;
     section.querySelectorAll('[data-answer]').forEach((gap) => {
       if (gap.classList.contains('is-right') || gap.classList.contains('is-revealed')) return;
       gap.value = gap.dataset.answer.split('|')[0];

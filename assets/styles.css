@@ -15,6 +15,7 @@
 }
 
 body { background: #f8fafc; }
+[hidden] { display: none !important; }
 
 /* ---------- sticky header */
 .app-header {
