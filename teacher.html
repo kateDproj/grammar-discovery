@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex">
   <title>Панель вчителя · Grammar Discovery</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link rel="stylesheet" href="assets/styles.css?v=9">
-  <link rel="stylesheet" href="assets/teacher.css?v=9">
+  <link rel="stylesheet" href="assets/styles.css?v=10">
+  <link rel="stylesheet" href="assets/teacher.css?v=10">
 </head>
 <body class="min-h-screen text-slate-800 antialiased">
 
@@ -39,6 +39,7 @@
       <nav class="flex flex-wrap gap-1" aria-label="Розділи">
         <button type="button" class="t-tab" data-view="overview">Огляд</button>
         <button type="button" class="t-tab" data-view="students">Учні</button>
+        <button type="button" class="t-tab" data-view="builder">Уроки</button>
         <button type="button" class="t-tab" data-view="lessons">Налаштування модулів</button>
       </nav>
       <div class="ml-auto flex items-center gap-3 text-sm">
@@ -53,7 +54,9 @@
 
   <div id="t-toast" class="t-toast" role="status" hidden></div>
 
-  <script src="assets/config.js?v=9"></script>
-  <script src="assets/teacher.js?v=9"></script>
+  <script src="assets/config.js?v=10"></script>
+  <script src="assets/lesson-render.js?v=10"></script>
+  <script src="assets/teacher-editor.js?v=10"></script>
+  <script src="assets/teacher.js?v=10"></script>
 </body>
 </html>

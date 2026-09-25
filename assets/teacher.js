@@ -133,10 +133,12 @@
       const meta = { questions: {}, questionOrder: [], exercises: {}, exerciseOrder: [] };
       T.meta[lesson.lesson_id] = meta;
 
+      const stored = (T.data.contents || {})[lesson.lesson_id];
       const page = LESSON_PAGES[lesson.lesson_id];
-      if (page) {
+      if (stored || page) {
         try {
-          const doc = parser.parseFromString(await (await fetch(page)).text(), 'text/html');
+          const html = stored ? window.LessonRender.steps(stored.content) : await (await fetch(page)).text();
+          const doc = parser.parseFromString(html, 'text/html');
           $$('[data-question]', doc).forEach((el) => {
             const id = el.dataset.question;
             const q = { id: id, prompt: '', options: {} };
@@ -158,7 +160,8 @@
         } catch (e) { /* page unavailable: ids are shown instead */ }
       }
 
-      const reward = parser.parseFromString(T.data.rewards[lesson.lesson_id] || '', 'text/html');
+      const rewardHtml = stored ? window.LessonRender.reward(stored.content.reward) : T.data.rewards[lesson.lesson_id] || '';
+      const reward = parser.parseFromString(rewardHtml, 'text/html');
       $$('[data-exercise-id]', reward).forEach((section) => {
         const ex = { id: section.dataset.exerciseId, title: text($('.exercise__title', section)), fields: [] };
         $$('input, select, textarea', section).forEach((f) => {
@@ -252,13 +255,17 @@
 
   function render() {
     $$('.t-tab').forEach((b) => {
-      const current = b.dataset.view === T.view || (T.view === 'student' && b.dataset.view === 'students');
+      const current = b.dataset.view === T.view || (T.view === 'student' && b.dataset.view === 'students') ||
+        (T.view === 'editor' && b.dataset.view === 'builder');
       if (current) b.setAttribute('aria-current', 'page');
       else b.removeAttribute('aria-current');
     });
     $('[data-teacher-name]').textContent = T.data.teacher.name;
-    const views = { overview: viewOverview, students: viewStudents, student: viewStudent, lessons: viewLessons };
+    const views = Object.assign(
+      { overview: viewOverview, students: viewStudents, student: viewStudent, lessons: viewLessons },
+      (window.TeacherEditor && window.TeacherEditor.views) || {});
     $('#t-main').innerHTML = views[T.view]();
+    if (window.TeacherEditor && window.TeacherEditor.afterRender) window.TeacherEditor.afterRender();
   }
 
   function viewOverview() {
@@ -536,6 +543,7 @@
 
   document.addEventListener('click', async (event) => {
     const viewButton = event.target.closest('[data-view]');
+    if (viewButton && window.TeacherEditor && !window.TeacherEditor.canLeave(viewButton.dataset.view)) return;
     if (viewButton) {
       T.view = viewButton.dataset.view;
       render();
@@ -620,6 +628,18 @@
       if (again) again.disabled = false;
     }
   });
+
+  // Shared with the lesson editor (teacher-editor.js).
+  window.TeacherApp = {
+    state: T,
+    api: api,
+    run: run,
+    render: render,
+    loadMeta: loadMeta,
+    toast: toast,
+    esc: esc,
+    fmtDate: fmtDate,
+  };
 
   // ------------------------------------------------------------ login
 

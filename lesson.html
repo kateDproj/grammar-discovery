@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Урок · Grammar Discovery</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="assets/styles.css?v=10">
+</head>
+<body data-defer-init class="min-h-screen text-slate-800 antialiased">
+
+  <main id="lesson-main" class="mx-auto max-w-3xl px-4 py-8 sm:py-10 space-y-6">
+    <div id="lesson-loading" class="step-card text-center text-slate-500" role="status">Завантажуємо урок…</div>
+  </main>
+
+  <script src="assets/config.js?v=10"></script>
+  <script src="assets/lesson-render.js?v=10"></script>
+  <script src="assets/app.js?v=10"></script>
+  <script>
+    (async function () {
+      'use strict';
+      const id = new URLSearchParams(location.search).get('id') || '';
+      const main = document.getElementById('lesson-main');
+      const cacheKey = 'gd:lesson:' + id;
+      const cache = {
+        get() { try { return JSON.parse(localStorage.getItem(cacheKey)); } catch (e) { return null; } },
+        set(v) { try { localStorage.setItem(cacheKey, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+      };
+
+      function fail(message) {
+        main.innerHTML = '<div class="step-card text-center space-y-3"><div class="text-4xl">😕</div>' +
+          '<p class="font-semibold text-slate-800">' + LessonRender.esc(message) + '</p>' +
+          '<a href="index.html" class="inline-block font-semibold text-blue-600">← До списку модулів</a></div>';
+      }
+
+      if (!/^[a-z0-9_]{3,40}$/.test(id)) return fail('Урок не знайдено.');
+
+      let lesson = null;
+      try {
+        const res = await fetch(APP_CONFIG.API_URL + '?' + new URLSearchParams({ action: 'lesson', lesson_id: id }));
+        const data = await res.json();
+        if (!data.ok) return fail(data.message || 'Урок не знайдено.');
+        lesson = data.lesson;
+        cache.set(lesson);
+      } catch (e) {
+        // No connection: open the copy saved the last time this lesson was loaded.
+        lesson = cache.get();
+        if (!lesson) return fail("Немає з'єднання з сервером. Спробуйте ще раз, коли з'явиться інтернет.");
+      }
+
+      document.title = LessonRender.plain(lesson.title) + ' · Grammar Discovery';
+      document.body.dataset.lessonId = id;
+      main.innerHTML = LessonRender.steps(lesson);
+      window.GDApp.start();
+    })();
+  </script>
+</body>
+</html>

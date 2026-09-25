@@ -10,3 +10,6 @@ APP_DOCUMENTATION_for_Gemini.txt
 
 # Answer key seed - uploaded to Apps Script only, never to GitHub
 gas/Seed.gs
+
+# Lesson content with answer keys - stored on the server, never in the public repo
+content/

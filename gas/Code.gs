@@ -1,6 +1,9 @@
 /**
  * Grammar Discovery — backend API (Google Apps Script Web App).
  *
+ * GET  ?action=lessons                -> published lessons for the home page
+ * GET  ?action=lesson&lesson_id=...   -> a published lesson without its answers (for lesson.html)
+ *
  * GET  ?action=login&student_id=101&lesson_id=mod1_conditionals
  *      -> validates the student, returns name, lesson settings and attempt counters.
  *         If the student has already passed the lesson, the reward section and the
@@ -46,7 +49,11 @@ const SHEETS = {
   answerKey: { name: 'AnswerKey', headers: ['lesson_id', 'question_id', 'correct_answer'] },
   teachers: { name: 'Teachers', headers: ['teacher_id', 'teacher_name'] },
   drafts: { name: 'Drafts', headers: ['student_id', 'lesson_id', 'answers_json', 'client_time', 'updated_at'] },
+  // Lesson content made with the lesson editor. status: draft (hidden from students) or published.
+  content: { name: 'Content', headers: ['lesson_id', 'status', 'content_json', 'updated_at', 'updated_by'] },
 };
+
+const MAX_CONTENT_LENGTH = 45000; // a spreadsheet cell holds 50 000 characters
 
 const MAX_ANSWER_LENGTH = 200;
 const MAX_WRITING_LENGTH = 3000;
@@ -60,6 +67,8 @@ function doGet(e) {
   return respond_(() => {
     const p = (e && e.parameter) || {};
     if (p.action === 'login') return login_(p.student_id, p.lesson_id);
+    if (p.action === 'lessons') return { ok: true, lessons: publishedLessons_() };
+    if (p.action === 'lesson') return { ok: true, lesson: publicLesson_(p.lesson_id) };
     throw apiError_('unknown_action', 'Невідома дія.');
   });
 }
@@ -262,9 +271,121 @@ function practice_(body) {
   return { ok: true };
 }
 
+// ---------------------------------------------------------------- lesson content
+
+function contentRow_(lessonId) {
+  if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.content.name)) return null;
+  return readTable_(SHEETS.content).find((row) => row.lesson_id === lessonId) || null;
+}
+
+function parseContent_(row) {
+  try {
+    return JSON.parse(row.content_json || '{}');
+  } catch (err) {
+    return {};
+  }
+}
+
+/** Published lessons for the home page, in the order of the Lessons tab. */
+function publishedLessons_() {
+  if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.content.name)) return [];
+  const content = readTable_(SHEETS.content);
+  return readTable_(SHEETS.lessons).map((lesson) => {
+    const row = content.find((c) => c.lesson_id === lesson.lesson_id);
+    if (!row || row.status !== 'published') return null;
+    const c = parseContent_(row);
+    return { id: lesson.lesson_id, title: c.title || lesson.lesson_title, summary: c.summary || '', source: c.source || '' };
+  }).filter(Boolean);
+}
+
+/** A published lesson as students may see it: no correct answers, no unlocked part. */
+function publicLesson_(lessonId) {
+  const row = contentRow_(String(lessonId || ''));
+  if (!row || row.status !== 'published') throw apiError_('lesson_not_found', 'Модуль не знайдено.');
+  const c = parseContent_(row);
+  delete c.reward;
+  const strip = (q) => (q.options || []).forEach((o) => delete o.correct);
+  ((c.meaning && c.meaning.questions) || []).forEach(strip);
+  ((c.form && c.form.questions) || []).forEach(strip);
+  ((c.rule && c.rule.items) || []).forEach((item) => (item.gaps || []).forEach(strip));
+  return c;
+}
+
+/** All discovery questions of a lesson (meaning, form and rule gaps), each with id and options. */
+function contentQuestions_(c) {
+  const list = [];
+  ((c.meaning && c.meaning.questions) || []).forEach((q) => list.push(q));
+  ((c.form && c.form.questions) || []).forEach((q) => list.push(q));
+  ((c.rule && c.rule.items) || []).forEach((item) => (item.gaps || []).forEach((g) => list.push(g)));
+  return list;
+}
+
+function validateContent_(c) {
+  if (!c || typeof c !== 'object') throw apiError_('bad_request', 'Некоректний урок.');
+  if (!/^[a-z0-9_]{3,40}$/.test(String(c.id || ''))) {
+    throw apiError_('bad_request', 'ID уроку: 3–40 символів, лише малі латинські літери, цифри та «_».');
+  }
+  if (!String(c.title || '').trim()) throw apiError_('bad_request', 'Введіть назву уроку.');
+  const questions = contentQuestions_(c);
+  if (!questions.length) throw apiError_('bad_request', 'Додайте хоча б одне питання або пропуск у правилі.');
+  const ids = {};
+  questions.forEach((q) => {
+    const label = 'Питання ' + q.id;
+    if (!/^[A-Za-z0-9_]{1,20}$/.test(String(q.id || '')) || ids[q.id]) throw apiError_('bad_request', label + ': некоректний або повторений ID.');
+    ids[q.id] = true;
+    const options = q.options || [];
+    if (options.length < 2) throw apiError_('bad_request', label + ': потрібно щонайменше два варіанти.');
+    const values = {};
+    options.forEach((o) => {
+      if (!/^[A-Za-z0-9_]{1,30}$/.test(String(o.value || '')) || values[o.value]) throw apiError_('bad_request', label + ': некоректний варіант.');
+      values[o.value] = true;
+      if (!String(o.text || '').trim()) throw apiError_('bad_request', label + ': порожній варіант відповіді.');
+    });
+    if (!options.some((o) => o.correct)) throw apiError_('bad_request', label + ': позначте правильну відповідь.');
+  });
+  const json = JSON.stringify(c);
+  if (json.length > MAX_CONTENT_LENGTH) throw apiError_('bad_request', 'Урок завеликий. Скоротіть текст або кількість вправ.');
+  return json;
+}
+
+/** Saves a lesson from the editor and rebuilds its rows in the AnswerKey tab from the ticked answers. */
+function saveContent_(body, teacher) {
+  const c = body.content;
+  const json = validateContent_(c);
+  const status = body.status === 'published' ? 'published' : 'draft';
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureSheet_(ss, SHEETS.content);
+
+  const existing = contentRow_(c.id);
+  if (body.is_new && (existing || readTable_(SHEETS.lessons).some((l) => l.lesson_id === c.id))) {
+    throw apiError_('duplicate', 'Урок з таким ID вже існує. Змініть ID.');
+  }
+  writeRow_(SHEETS.content, existing ? existing._row : null, {
+    lesson_id: c.id,
+    status: status,
+    content_json: json,
+    updated_at: new Date(),
+    updated_by: teacher.teacher_name,
+  });
+
+  const lesson = readTable_(SHEETS.lessons).find((l) => l.lesson_id === c.id);
+  if (lesson) writeRow_(SHEETS.lessons, lesson._row, { lesson_title: cleanCell_(c.title) });
+  else writeRow_(SHEETS.lessons, null, {
+    lesson_id: c.id, lesson_title: cleanCell_(c.title), max_attempts: '',
+    practice_reveal_after: DEFAULT_PRACTICE_REVEAL_AFTER, practice_max_checks: '',
+  });
+
+  const keySheet = sheet_(SHEETS.answerKey);
+  readTable_(SHEETS.answerKey).filter((r) => r.lesson_id === c.id).map((r) => r._row)
+    .sort((a, b) => b - a).forEach((r) => keySheet.deleteRow(r));
+  const rows = contentQuestions_(c).map((q) => [c.id, q.id, q.options.filter((o) => o.correct).map((o) => o.value).join('|')]);
+  if (rows.length) keySheet.getRange(keySheet.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
+}
+
 // ---------------------------------------------------------------- teacher control center
 
-const ADMIN_OPS = ['overview', 'add_student', 'update_student', 'delete_student', 'save_lesson', 'reset_progress'];
+const ADMIN_OPS = ['overview', 'add_student', 'update_student', 'delete_student', 'save_lesson', 'reset_progress',
+  'save_content'];
 const RESET_SCOPES = ['all', 'discovery', 'practice'];
 
 function admin_(body) {
@@ -281,6 +402,7 @@ function admin_(body) {
     if (op === 'delete_student') deleteStudent_(body.student_id);
     if (op === 'save_lesson') saveLesson_(body.lesson || {});
     if (op === 'reset_progress') resetProgress_(body.student_id, body.lesson_id, body.scope);
+    if (op === 'save_content') saveContent_(body, teacher);
   } finally {
     lock.releaseLock();
   }
@@ -308,8 +430,15 @@ function overview_(teacher) {
       practice_max_checks: settings.practiceMaxChecks,
     };
   });
+  // Editor lessons come with their full content (including answers); hand-written ones with their reward HTML.
+  const contents = {};
   const rewards = {};
-  lessons.forEach((l) => (rewards[l.lesson_id] = reward_(l.lesson_id)));
+  const contentRows = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.content.name) ? readTable_(SHEETS.content) : [];
+  lessons.forEach((l) => {
+    const row = contentRows.find((c) => c.lesson_id === l.lesson_id);
+    if (row) contents[l.lesson_id] = { status: row.status, updated_at: row.updated_at, content: parseContent_(row) };
+    else rewards[l.lesson_id] = reward_(l.lesson_id);
+  });
   return {
     ok: true,
     teacher: { name: teacher.teacher_name },
@@ -319,6 +448,7 @@ function overview_(teacher) {
     practice: hasPractice ? readTable_(SHEETS.practice) : [],
     answer_key: readTable_(SHEETS.answerKey),
     rewards: rewards,
+    contents: contents,
   };
 }
 
@@ -428,6 +558,8 @@ function loadContext_(studentId, lessonId) {
 
   const lesson = readTable_(SHEETS.lessons).find((row) => row.lesson_id === lid);
   if (!lesson) throw apiError_('lesson_not_found', 'Модуль не знайдено.');
+  const content = contentRow_(lid);
+  if (content && content.status !== 'published') throw apiError_('lesson_not_found', 'Модуль ще не опубліковано.');
 
   const attempts = readTable_(SHEETS.attempts).filter((row) => row.student_id === sid && row.lesson_id === lid);
   const passed = attempts.some((row) => row.passed.toUpperCase() === 'TRUE');
@@ -512,8 +644,13 @@ function sheet_(def) {
   return sheet;
 }
 
-/** Reward files are named reward_<lesson_id>.html in this project. */
+/**
+ * The unlocked part of a lesson: from the lesson editor's content (an object the browser renders)
+ * or, for lessons written by hand, the file reward_<lesson_id>.html (an HTML string).
+ */
 function reward_(lessonId) {
+  const content = contentRow_(lessonId);
+  if (content) return parseContent_(content).reward || {};
   try {
     return HtmlService.createHtmlOutputFromFile('reward_' + lessonId).getContent();
   } catch (err) {
@@ -620,9 +757,13 @@ function upgrade() {
  */
 function syncAnswerKey() {
   if (typeof ANSWER_KEY_SEED === 'undefined') throw new Error('Seed.gs with ANSWER_KEY_SEED is missing.');
+  // Lessons saved in the lesson editor keep the answer key made from their content.
+  const seeded = ANSWER_KEY_SEED.map((r) => r[0]).filter((id, i, all) => all.indexOf(id) === i && !contentRow_(id));
   const sheet = sheet_(SHEETS.answerKey);
-  if (sheet.getLastRow() > 1) sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
-  sheet.getRange(2, 1, ANSWER_KEY_SEED.length, ANSWER_KEY_SEED[0].length).setValues(ANSWER_KEY_SEED);
+  readTable_(SHEETS.answerKey).filter((r) => seeded.indexOf(r.lesson_id) !== -1).map((r) => r._row)
+    .sort((a, b) => b - a).forEach((r) => sheet.deleteRow(r));
+  const rows = ANSWER_KEY_SEED.filter((r) => seeded.indexOf(r[0]) !== -1);
+  if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
 }
 
 /** Creates the tab if needed and appends any header columns that are missing. */

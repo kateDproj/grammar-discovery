@@ -1,7 +1,8 @@
 /*
  * Grammar Discovery — shared logic for lesson pages.
  *
- * A lesson page declares <body data-lesson-id="...">, marks CCQs as
+ * A lesson page declares <body data-lesson-id="...">. Pages built from lesson data (lesson.html)
+ * add data-defer-init and call window.GDApp.start() once the lesson is on the page. The page marks CCQs as
  * <fieldset data-question="q1"> with radio inputs inside a [data-shuffle]
  * container, and rule gaps as <select data-question="r1">.
  * The correct answers are NOT in the page: the API checks them and returns
@@ -11,7 +12,7 @@
   'use strict';
 
   const API_URL = (window.APP_CONFIG || {}).API_URL;
-  const LESSON_ID = document.body.dataset.lessonId;
+  let LESSON_ID = document.body.dataset.lessonId;
   const REQUEST_TIMEOUT_MS = 25000;
 
   const state = {
@@ -408,7 +409,9 @@
 
   // ------------------------------------------------------------ unlock & celebrate
 
-  function unlock(html, scroll) {
+  /** reward: HTML (hand-written lessons) or lesson data rendered by LessonRender (lesson editor). */
+  function unlock(reward, scroll) {
+    const html = typeof reward === 'string' ? reward : window.LessonRender.reward(reward);
     els.reward.innerHTML = '<div class="unlock-in">' + html + '</div>';
     els.reward.classList.remove('relative');
     initPractice();
@@ -736,6 +739,7 @@
   // ------------------------------------------------------------ boot
 
   function init() {
+    LESSON_ID = document.body.dataset.lessonId;
     buildChrome();
     shuffleOptions();
     clearAnswers();
@@ -758,5 +762,6 @@
     els.idInput.focus();
   }
 
-  init();
+  if (document.body.hasAttribute('data-defer-init')) window.GDApp = { start: init };
+  else init();
 })();
