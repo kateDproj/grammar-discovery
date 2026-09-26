@@ -205,10 +205,13 @@
         exercises++;
         b.items.forEach((t, j) => {
           if (!String(t).trim()) return;
-          if (!/\[[^\]]+\]/.test(t)) warnings.push(name + ', речення ' + (j + 1) + ': немає пропуску в [дужках].');
-          if (b.mode === 'choose' && /\[[^\]]+\]/.test(t) && !/\[[^\]]*\*[^\]]*\]/.test(t)) {
-            warnings.push(name + ', речення ' + (j + 1) + ': позначте правильний варіант зірочкою, напр. [had been*|was].');
-          }
+          const where = name + ', речення ' + (j + 1);
+          const model = parseGapItem(t, b.mode === 'choose');
+          if (!model.gaps.length) warnings.push(where + ': немає пропуску — позначте слово(а) й натисніть «Зробити пропуском».');
+          model.gaps.forEach((g, k) => {
+            if (!g.main) warnings.push(where + ', пропуск ' + (k + 1) + ': порожня правильна відповідь.');
+            if (b.mode === 'choose' && !g.others.filter((o) => o.replace(EMPTY, '').trim()).length) warnings.push(where + ', пропуск ' + (k + 1) + ': додайте хоча б один неправильний варіант для списку.');
+          });
         });
       }
       if (b.type === 'writing') {
@@ -222,13 +225,15 @@
 
   // ------------------------------------------------------------ small form helpers
 
+  /** opts.plain: no formatting toolbar; opts.md = 'box': toolbar with line types (heading, bullet, example). */
   const field = (path, labelText, opts) => {
     opts = opts || {};
     const value = getPath(E.lesson, path);
     const help = opts.help ? '<span class="t-help">' + opts.help + '</span>' : '';
+    const md = opts.plain || opts.readonly ? '' : ' data-md="' + (opts.md || 'inline') + '"';
     const input = opts.rows
-      ? '<textarea class="t-input w-full" rows="' + opts.rows + '" data-bind="' + path + '"' + (opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '') + '>' + esc(value) + '</textarea>'
-      : '<input class="t-input w-full" data-bind="' + path + '" value="' + esc(value) + '"' + (opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '') + (opts.readonly ? ' readonly' : '') + '>';
+      ? '<textarea class="t-input w-full" rows="' + opts.rows + '" data-bind="' + path + '"' + md + (opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '') + '>' + esc(value) + '</textarea>'
+      : '<input class="t-input w-full" data-bind="' + path + '"' + md + ' value="' + esc(value) + '"' + (opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : '') + (opts.readonly ? ' readonly' : '') + '>';
     return '<label class="t-label' + (opts.className ? ' ' + opts.className : '') + '">' + labelText + input + help + '</label>';
   };
 
@@ -247,7 +252,8 @@
       options.map((o, i) =>
         '<div class="flex items-center gap-2">' +
         '<input type="radio" name="correct-' + path + '" data-correct="' + path + '" data-index="' + i + '"' + (o.correct ? ' checked' : '') + ' aria-label="Правильна відповідь" class="h-5 w-5 accent-emerald-600">' +
-        '<input class="t-input flex-1" data-bind="' + path + '.' + i + '.text" value="' + esc(o.text) + '" placeholder="Варіант ' + (i + 1) + '">' +
+        '<input class="t-input flex-1" data-bind="' + path + '.' + i + '.text"' + (path.indexOf('.gaps.') === -1 ? ' data-md="inline"' : '') +
+        ' value="' + esc(o.text) + '" placeholder="Варіант ' + (i + 1) + '">' +
         (options.length > 2 ? btn('remove', path, i, '✕', 't-btn--ghost', ' title="Видалити варіант"') : '') +
         '</div>').join('') +
       (options.length < 6 ? btn('add', path, null, '+ варіант', 't-btn--ghost', ' data-tpl="option"') : '') + '</div>';
@@ -266,7 +272,7 @@
       (note ? '<p class="t-help mt-1">' + note + '</p>' : '') + '</div>' + body + '</section>';
   }
 
-  const MARKUP_HELP = '<b>**жирний**</b> — виділення, <i>*курсив*</i>, ==колір== — акцент. ' +
+  const MARKUP_HELP = 'Форматування: позначте текст і натисніть <b>Ж</b>, <i>К</i> або «Колір» на панелі, що з\'являється над полем. ' +
     '<a class="underline" href="teacher-help.html#format" target="_blank" rel="noopener">Докладніше</a>';
 
   // ------------------------------------------------------------ editor sections
@@ -276,9 +282,9 @@
     return section('Основне',
       '<div class="grid gap-3 sm:grid-cols-2">' +
       field('title', 'Назва уроку', { placeholder: 'напр. The Passive Voice' }) +
-      field('id', 'ID уроку', { readonly: !E.isNew, help: E.isNew ? 'Латиницею, без пробілів. Не змінюється після створення.' : 'Не змінюється.' }) +
+      field('id', 'ID уроку', { plain: true, readonly: !E.isNew, help: E.isNew ? 'Латиницею, без пробілів. Не змінюється після створення.' : 'Не змінюється.' }) +
       field('summary', 'Короткий опис для головної сторінки', { placeholder: 'напр. Коли важлива дія, а не той, хто її виконує.' }) +
-      field('source', 'Джерело', { placeholder: 'напр. Підручник, с. 40–42' }) +
+      field('source', 'Джерело', { plain: true, placeholder: 'напр. Підручник, с. 40–42' }) +
       '</div>' + field('intro', 'Вступ для учня', { rows: 2 }) +
       (l.id && !E.isNew ? '<p class="t-help">Посилання для учнів: <span class="font-mono">lesson.html?id=' + esc(l.id) + '</span></p>' : ''));
   }
@@ -296,19 +302,17 @@
         field('observation.pairs.leftNote', 'Підпис ліворуч') + field('observation.pairs.rightNote', 'Підпис праворуч') + '</div>' +
         '<div class="space-y-2">' + p.items.map((it, i) =>
           '<div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-start">' +
-          '<textarea class="t-input" rows="2" data-bind="observation.pairs.items.' + i + '.left" placeholder="Ліворуч">' + esc(it.left) + '</textarea>' +
-          '<textarea class="t-input" rows="2" data-bind="observation.pairs.items.' + i + '.right" placeholder="Праворуч">' + esc(it.right) + '</textarea>' +
+          '<textarea class="t-input" rows="2" data-md="inline" data-bind="observation.pairs.items.' + i + '.left" placeholder="Ліворуч">' + esc(it.left) + '</textarea>' +
+          '<textarea class="t-input" rows="2" data-md="inline" data-bind="observation.pairs.items.' + i + '.right" placeholder="Праворуч">' + esc(it.right) + '</textarea>' +
           moveButtons('observation.pairs.items', i, p.items.length) + '</div>').join('') +
         btn('add', 'observation.pairs.items', null, '+ пара', 't-btn--ghost', ' data-tpl="pair"') + '</div>';
     } else {
       body += field('observation.text', 'Текст', {
         rows: 7,
         placeholder: 'Emma: Are you coming to the party tonight?\nDavid: I will come **if you invite me**.',
-        help: 'Кожен рядок — окремий абзац. «Ім\'я: текст» — репліка персонажа. Виділіть цільову форму: **if you invite me**.',
+        help: 'Кожен рядок — окремий абзац. «Ім\'я: текст» — репліка персонажа. Щоб виділити цільову форму, позначте слова й натисніть Ж на панелі над полем.',
       });
     }
-    body += '<div><button type="button" class="t-btn t-btn--ghost" data-ed="highlight">Виділити позначений текст **…**</button>' +
-      '<span class="t-help ml-2">Позначте слова в полі тексту й натисніть.</span></div>';
     return section('Крок 1 · Спостереження', body, 'Текст із прикладами, де учень помічає цільову граматику. ' + MARKUP_HELP);
   }
 
@@ -351,12 +355,13 @@
     if (b.type === 'box') {
       body = tag + field(path + '.text', 'Текст', {
         rows: 8,
-        help: 'Порожній рядок — новий абзац. «# Заголовок» — заголовок по центру. «- …» — пункт списку. «> …» — приклад курсивом. ' + MARKUP_HELP,
+        md: 'box',
+        help: 'Порожній рядок — новий абзац. Кнопки «Заголовок», «Пункт» і «Приклад» на панелі над полем змінюють тип рядка, у якому стоїть курсор. ' + MARKUP_HELP,
       });
     }
     if (b.type === 'table') {
       const cols = Math.max(b.header.length, ...b.rows.map((r) => r.length), 1);
-      const cell = (p, v, ph) => '<td class="p-1"><input class="t-input w-full" data-bind="' + p + '" value="' + esc(v) + '" placeholder="' + ph + '"></td>';
+      const cell = (p, v, ph) => '<td class="p-1"><input class="t-input w-full" data-md="inline" data-bind="' + p + '" value="' + esc(v) + '" placeholder="' + ph + '"></td>';
       body = tag + '<div class="grid gap-3 sm:grid-cols-2">' + field(path + '.title', 'Заголовок таблиці (необов\'язково)') +
         field(path + '.intro', 'Правило над таблицею (необов\'язково)') + '</div>' +
         '<div class="overflow-x-auto"><table class="w-full"><thead><tr>' +
@@ -370,15 +375,14 @@
         '<p class="t-help">Перший стовпець виділяється. У клітинках: ' + MARKUP_HELP + '</p>';
     }
     if (b.type === 'gapfill') {
+      const choose = b.mode === 'choose';
       body = field(path + '.title', 'Завдання', { placeholder: 'напр. Fill in the blanks with if, even if or unless.' }) +
         '<label class="t-label">Тип пропусків<select class="t-input w-72" data-bind="' + path + '.mode">' +
-        '<option value="type"' + (b.mode !== 'choose' ? ' selected' : '') + '>Учень вписує відповідь</option>' +
-        '<option value="choose"' + (b.mode === 'choose' ? ' selected' : '') + '>Учень обирає зі списку</option></select></label>' +
-        '<label class="t-label">Речення (кожне з нового рядка)<textarea class="t-input w-full font-mono text-sm" rows="6" data-bind="' + path + '.items" data-type="lines">' + esc(b.items.join('\n')) + '</textarea>' +
-        '<span class="t-help">' + (b.mode === 'choose'
-          ? 'Варіанти в дужках через «|», правильний — із зірочкою: <span class="font-mono">Jane said she [had been*|was] there.</span>'
-          : 'Відповідь у квадратних дужках, кілька правильних — через «|»: <span class="font-mono">I won\'t disturb you if you [are working|\'re working]. (work)</span>') +
-        ' Підказка в дужках у кінці речення буде сірою.</span></label>';
+        '<option value="type"' + (!choose ? ' selected' : '') + '>Учень вписує відповідь</option>' +
+        '<option value="choose"' + (choose ? ' selected' : '') + '>Учень обирає зі списку</option></select>' +
+        '<span class="t-help">Якщо змінити тип, додаткові варіанти відповідей буде очищено.</span></label>' +
+        '<div class="space-y-3">' + b.items.map((item, j) => gapItemEditor(i, j, item, choose, b.items.length)).join('') + '</div>' +
+        btn('add', path + '.items', null, '+ речення', 't-btn--ghost', ' data-tpl="gapItem"');
     }
     if (b.type === 'writing') {
       body = '<div class="grid gap-3 sm:grid-cols-2">' + field(path + '.title', 'Завдання') + field(path + '.hint', 'Підказка (необов\'язково)') + '</div>' +
@@ -393,6 +397,99 @@
         btn('add', path + '.items', null, '+ завдання', 't-btn--ghost', ' data-tpl="writingItem"') + '</div>';
     }
     return '<div class="rounded-xl border border-slate-200 p-4 space-y-3">' + head + body + '</div>';
+  }
+
+  // Gap-fill sentences are stored as text: "English [is spoken|is being spoken] here. (speak)".
+  // [..] holds the answers (in choose mode the correct one has a *), a final (..) is the grey hint.
+  const HINT_RE = /\s*\(([^()]+)\)\s*$/;
+  const EMPTY = '\u200b'; // keeps a just-added, still empty answer field; removed before saving
+  const stripEmpty = (t) => String(t).replace(/\|\u200b(?=[|\]])/g, '').replace(/\u200b/g, '');
+
+  function parseGapItem(str, choose) {
+    let text = String(str || '');
+    let hint = '';
+    const m = text.match(HINT_RE);
+    if (m) {
+      hint = m[1];
+      text = text.slice(0, m.index);
+    }
+    const gaps = [];
+    const sentence = text.replace(/\[([^\]]*)\]/g, (whole, inner) => {
+      const parts = inner.split('|').map((x) => x.trim()).filter((x) => x !== '');
+      const starred = parts.findIndex((x) => x.endsWith('*'));
+      const clean = parts.map((x) => x.replace(/\*$/, ''));
+      const idx = choose && starred !== -1 ? starred : 0;
+      gaps.push({ main: clean[idx] || '', others: clean.filter((_, k) => k !== idx) });
+      return '[' + (clean[idx] || '') + ']';
+    });
+    return { sentence: sentence, gaps: gaps, hint: hint };
+  }
+
+  function serializeGapItem(model, choose) {
+    const clean = (x) => String(x == null ? '' : x).replace(/[\[\]|*]/g, '').trim();
+    let k = 0;
+    const text = model.sentence.replace(/\[([^\]]*)\]/g, (whole, inner) => {
+      const g = model.gaps[k++] || { others: [] };
+      const others = g.others.map(clean).filter(Boolean);
+      return '[' + [clean(inner) + (choose ? '*' : '')].concat(others).join('|') + ']';
+    });
+    const hint = clean(model.hint).replace(/[()]/g, '');
+    return text.trim() + (hint ? ' (' + hint + ')' : '');
+  }
+
+  function gapPreview(item, choose) {
+    const html = R.reward({ blocks: [{ type: 'gapfill', id: 'preview', mode: choose ? 'choose' : 'type', title: '', items: [stripEmpty(item)] }] });
+    const m = html.match(/<li>([\s\S]*?)<\/li>/);
+    return m ? m[1] : '';
+  }
+
+  function gapItemEditor(i, j, item, choose, count) {
+    const model = parseGapItem(item, choose);
+    const key = i + '.' + j;
+    const gaps = model.gaps.map((g, k) =>
+      '<div class="rounded-lg border border-slate-200 bg-white p-3 space-y-2">' +
+      '<div class="text-sm">Пропуск ' + (k + 1) + ' · правильна відповідь: <b class="text-emerald-700">' + (esc(g.main) || '—') + '</b></div>' +
+      '<div class="t-label">' + (choose ? 'Неправильні варіанти у списку' : 'Інші правильні відповіді (необов\'язково)') +
+      (j === 0 ? '<span class="t-help">' + (choose
+        ? 'Учень обиратиме між правильною відповіддю і цими варіантами (порядок буде випадковим).'
+        : 'Напр. скорочена форма: <i>\'re working</i> для <i>are working</i>. Кожен варіант в окремому полі.') + '</span>' : '') + '</div>' +
+      '<div class="space-y-2">' + g.others.map((o, m) =>
+        '<div class="flex items-center gap-2"><input class="t-input flex-1" data-gap-other="' + key + '.' + k + '.' + m + '" data-bind="__go.' + key + '.' + k + '.' + m + '" value="' + esc(o.replace(EMPTY, '')) + '">' +
+        '<button type="button" class="t-btn t-btn--ghost" data-ed="gap-other-remove" data-gap="' + key + '.' + k + '.' + m + '" title="Видалити">✕</button></div>').join('') + '</div>' +
+      '<button type="button" class="t-btn t-btn--ghost" data-ed="gap-other-add" data-gap="' + key + '.' + k + '">' + (choose ? '+ неправильний варіант' : '+ ще правильна відповідь') + '</button>' +
+      '</div>').join('');
+    return '<div class="rounded-xl bg-slate-50 p-3 space-y-3">' +
+      '<div class="flex items-center justify-between gap-2"><span class="text-sm font-semibold text-slate-600">Речення ' + (j + 1) + '</span>' +
+      moveButtons('reward.blocks.' + i + '.items', j, count) + '</div>' +
+      '<label class="t-label">Речення<input class="t-input w-full" data-md="inline" data-gap-sentence="' + key + '" data-bind="__gs.' + key + '" value="' + esc(model.sentence) + '" placeholder="напр. English is spoken in many countries."></label>' +
+      '<div class="flex flex-wrap items-center gap-2"><button type="button" class="t-btn t-btn--soft" data-ed="make-gap" data-gap="' + key + '">▢ Зробити пропуском</button>' +
+      (j === 0 ? '<span class="t-help">Позначте в реченні слово(а), які учень має ' + (choose ? 'обрати' : 'вписати') + ', і натисніть. Пропуск показано в дужках [ ]; ' +
+      'щоб прибрати пропуск, видаліть дужки.</span>' : '') + '</div>' +
+      (model.gaps.length ? gaps : '<p class="text-sm text-amber-800">У реченні ще немає пропуску.</p>') +
+      '<label class="t-label">Підказка в дужках (необов\'язково)<input class="t-input w-64" data-gap-hint="' + key + '" data-bind="__gh.' + key + '" value="' + esc(model.hint) + '" placeholder="напр. speak">' +
+      (j === 0 ? '<span class="t-help">Показується сірим у кінці речення, напр. початкова форма дієслова.</span>' : '') + '</label>' +
+      '<div class="text-sm"><span class="text-slate-500">Учень бачить:</span> <span class="ed-gap-preview" data-gap-preview="' + key + '" inert>' + gapPreview(item, choose) + '</span></div>' +
+      '</div>';
+  }
+
+  function gapBlock(key) {
+    const [i, j] = key.split('.').map(Number);
+    const block = E.lesson.reward.blocks[i];
+    return { block: block, j: j, choose: block.mode === 'choose' };
+  }
+
+  /** Applies a change to one gap-fill sentence; returns true when the form needs to be redrawn. */
+  function updateGapItem(key, change) {
+    const g = gapBlock(key);
+    const before = parseGapItem(g.block.items[g.j], g.choose);
+    const model = parseGapItem(g.block.items[g.j], g.choose);
+    change(model);
+    g.block.items[g.j] = serializeGapItem(model, g.choose);
+    const after = parseGapItem(g.block.items[g.j], g.choose);
+    const preview = document.querySelector('[data-gap-preview="' + key + '"]');
+    if (preview) preview.innerHTML = gapPreview(g.block.items[g.j], g.choose);
+    changed();
+    return after.gaps.length !== before.gaps.length || after.gaps.some((x, k) => x.main !== before.gaps[k].main);
   }
 
   function rewardSection() {
@@ -592,6 +689,7 @@
     }
     const wasNew = E.isNew;
     const payload = clone(E.lesson);
+    payload.reward.blocks.forEach((b) => { if (b.type === 'gapfill') b.items = b.items.map(stripEmpty).filter((t) => t.trim()); });
     if (payload.observation.layout === 'pairs') delete payload.observation.text;
     else delete payload.observation.pairs;
     const ok = await app().run('save_content', { content: payload, status: status, is_new: wasNew },
@@ -618,6 +716,7 @@
     const start = active && active.selectionStart;
     const end = active && active.selectionEnd;
     const y = window.scrollY;
+    hideToolbar();
     app().render();
     window.scrollTo(0, y);
     if (bind) {
@@ -650,6 +749,19 @@
   document.addEventListener('input', (event) => {
     const el = event.target;
     if (!E.lesson || !el.dataset || !el.dataset.bind || app().state.view !== 'editor') return;
+    if (el.dataset.gapSentence) {
+      if (updateGapItem(el.dataset.gapSentence, (m) => { m.sentence = el.value; })) refresh();
+      return;
+    }
+    if (el.dataset.gapHint) {
+      updateGapItem(el.dataset.gapHint, (m) => { m.hint = el.value; });
+      return;
+    }
+    if (el.dataset.gapOther) {
+      const parts = el.dataset.gapOther.split('.');
+      updateGapItem(parts[0] + '.' + parts[1], (m) => { m.gaps[Number(parts[2])].others[Number(parts[3])] = el.value.replace(/\u200b/g, '') || EMPTY; });
+      return;
+    }
     const path = el.dataset.bind;
     let value = el.value;
     if (el.dataset.type === 'checkbox') value = el.checked;
@@ -679,7 +791,22 @@
       changed();
       return;
     }
-    if (el.dataset.bind === 'observation.layout' || (el.dataset.bind && /\.mode$/.test(el.dataset.bind)) || el.dataset.type === 'checkbox') {
+    const modeChange = el.dataset.bind && el.dataset.bind.match(/^(reward\.blocks\.\d+)\.mode$/);
+    if (modeChange) {
+      // Extra answers mean different things in the two modes (more correct answers vs wrong options), so they are cleared.
+      const block = getPath(E.lesson, modeChange[1]);
+      const wasChoose = block.mode === 'choose';
+      block.items = block.items.map((t) => {
+        const m = parseGapItem(t, wasChoose);
+        m.gaps.forEach((g) => (g.others = []));
+        return serializeGapItem(m, el.value === 'choose');
+      });
+      block.mode = el.value;
+      changed();
+      refresh();
+      return;
+    }
+    if (el.dataset.bind === 'observation.layout' || el.dataset.type === 'checkbox') {
       setPath(E.lesson, el.dataset.bind, el.dataset.type === 'checkbox' ? el.checked : el.value);
       changed();
       refresh();
@@ -707,16 +834,40 @@
       clearAutosave();
       return refresh();
     }
-    if (action === 'highlight') {
-      const ta = document.querySelector('[data-bind="observation.text"]');
-      if (!ta || ta.selectionStart === ta.selectionEnd) {
-        app().toast('Спершу позначте слова в полі «Текст».', true);
+    if (action === 'make-gap') {
+      const input = document.querySelector('[data-gap-sentence="' + b.dataset.gap + '"]');
+      let start = input.selectionStart;
+      let end = input.selectionEnd;
+      const v = input.value;
+      while (start < end && v[start] === ' ') start++;
+      while (end > start && v[end - 1] === ' ') end--;
+      if (start === end) {
+        app().toast('Спершу позначте в реченні слово(а) для пропуску.', true);
+        input.focus();
         return;
       }
-      const v = ta.value;
-      ta.value = v.slice(0, ta.selectionStart) + '**' + v.slice(ta.selectionStart, ta.selectionEnd) + '**' + v.slice(ta.selectionEnd);
-      E.lesson.observation.text = ta.value;
-      changed();
+      if (/[\[\]]/.test(v.slice(start, end)) || (v.slice(0, start).split('[').length !== v.slice(0, start).split(']').length)) {
+        app().toast('Позначте слова поза наявним пропуском.', true);
+        return;
+      }
+      input.value = v.slice(0, start) + '[' + v.slice(start, end) + ']' + v.slice(end);
+      updateGapItem(b.dataset.gap, (m) => { m.sentence = input.value; });
+      return refresh();
+    }
+    if (action === 'gap-other-add' || action === 'gap-other-remove') {
+      const parts = b.dataset.gap.split('.').map(Number);
+      updateGapItem(parts[0] + '.' + parts[1], (m) => {
+        const others = m.gaps[parts[2]].others;
+        if (action === 'gap-other-add') others.push(EMPTY);
+        else others.splice(parts[3], 1);
+      });
+      refresh();
+      if (action === 'gap-other-add') {
+        const key = parts[0] + '.' + parts[1] + '.' + parts[2];
+        const fields = document.querySelectorAll('[data-gap-other^="' + key + '."]');
+        const last = fields[fields.length - 1];
+        if (last) { last.value = ''; last.focus(); }
+      }
       return;
     }
 
@@ -733,6 +884,7 @@
       if (tpl === 'pair') list.push({ left: '', right: '' });
       if (tpl === 'ruleItem') list.push({ text: '', gaps: [] });
       if (tpl === 'writingItem') list.push({ prompt: '', answer: '', example: false });
+      if (tpl === 'gapItem') list.push('');
       if (tpl === 'row') {
         const block = getPath(E.lesson, path.replace(/\.rows$/, ''));
         list.push(Array.from({ length: Math.max(block.header.length, 1) }, () => ''));
@@ -760,6 +912,116 @@
     refresh();
   });
 
+  // ------------------------------------------------------------ formatting toolbar (appears above the focused field)
+
+  const TOOLS = [
+    { act: 'wrap', mark: '**', html: '<b>Ж</b>', title: 'Жирний. У тексті кроку 1 — виділення цільової форми синім.' },
+    { act: 'wrap', mark: '*', html: '<i>К</i>', title: 'Курсив. У реченні правила — приклад із тексту синім курсивом.' },
+    { act: 'wrap', mark: '==', html: '<span class="gl-accent">Колір</span>', title: 'Акцент кольором' },
+    { act: 'line', mark: '# ', html: 'Заголовок', title: 'Рядок — заголовок по центру', box: true },
+    { act: 'line', mark: '- ', html: '• Пункт', title: 'Рядок — пункт списку', box: true },
+    { act: 'line', mark: '> ', html: '› Приклад', title: 'Рядок — приклад курсивом', box: true },
+    { act: 'clear', html: '✕', title: 'Прибрати форматування з позначеного тексту' },
+  ];
+  let toolbar = null;
+  let mdTarget = null;
+
+  function ensureToolbar() {
+    if (toolbar) return toolbar;
+    toolbar = document.createElement('div');
+    toolbar.className = 'ed-md';
+    toolbar.hidden = true;
+    toolbar.setAttribute('role', 'toolbar');
+    toolbar.setAttribute('aria-label', 'Форматування');
+    toolbar.innerHTML = TOOLS.map((t, k) => '<button type="button" data-tool="' + k + '" title="' + esc(t.title) + '"' +
+      (t.box ? ' data-box-only' : '') + '>' + t.html + '</button>').join('');
+    // Keep the focus and the selection in the text field while clicking the buttons.
+    toolbar.addEventListener('mousedown', (e) => e.preventDefault());
+    toolbar.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tool]');
+      if (b && mdTarget) applyTool(TOOLS[Number(b.dataset.tool)], mdTarget);
+    });
+    document.body.appendChild(toolbar);
+    return toolbar;
+  }
+
+  function showToolbar(el) {
+    const tb = ensureToolbar();
+    mdTarget = el;
+    tb.querySelectorAll('[data-box-only]').forEach((b) => (b.hidden = el.dataset.md !== 'box'));
+    tb.hidden = false;
+    const r = el.getBoundingClientRect();
+    tb.style.top = Math.max(0, window.scrollY + r.top - tb.offsetHeight - 4) + 'px';
+    tb.style.left = Math.max(8, window.scrollX + r.right - tb.offsetWidth) + 'px';
+  }
+
+  function hideToolbar() {
+    if (toolbar) toolbar.hidden = true;
+    mdTarget = null;
+  }
+
+  function applyTool(tool, el) {
+    let start = el.selectionStart;
+    let end = el.selectionEnd;
+    let v = el.value;
+    if (tool.act === 'line') {
+      const lineStart = v.lastIndexOf('\n', start - 1) + 1;
+      let lineEnd = v.indexOf('\n', end);
+      if (lineEnd === -1) lineEnd = v.length;
+      const lines = v.slice(lineStart, lineEnd).split('\n').map((line) => {
+        const bare = line.replace(/^(# |- |> )/, '');
+        return line.startsWith(tool.mark) ? bare : tool.mark + bare;
+      }).join('\n');
+      v = v.slice(0, lineStart) + lines + v.slice(lineEnd);
+      start = lineStart;
+      end = lineStart + lines.length;
+    } else {
+      while (start < end && /\s/.test(v[start])) start++;
+      while (end > start && /\s/.test(v[end - 1])) end--;
+      if (start === end) {
+        app().toast('Спершу позначте текст у полі.', true);
+        return;
+      }
+      const sel = v.slice(start, end);
+      if (tool.act === 'clear') {
+        const bare = sel.replace(/\*\*|==|\*/g, '');
+        v = v.slice(0, start) + bare + v.slice(end);
+        end = start + bare.length;
+      } else {
+        const m = tool.mark;
+        const wrapped = v.slice(start - m.length, start) === m && v.slice(end, end + m.length) === m &&
+          !(m === '*' && (v[start - 2] === '*' || v[end + 1] === '*'));
+        if (wrapped) {
+          v = v.slice(0, start - m.length) + sel + v.slice(end + m.length);
+          start -= m.length;
+          end -= m.length;
+        } else {
+          v = v.slice(0, start) + m + sel + m + v.slice(end);
+          start += m.length;
+          end += m.length;
+        }
+      }
+    }
+    el.value = v;
+    el.focus();
+    el.setSelectionRange(start, end);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    if (el.isConnected) showToolbar(el);
+  }
+
+  document.addEventListener('focusin', (event) => {
+    const el = event.target;
+    if (el.matches && el.matches('[data-md]') && E.lesson && app() && app().state.view === 'editor') showToolbar(el);
+    else if (!toolbar || !toolbar.contains(el)) hideToolbar();
+  });
+  document.addEventListener('focusout', () => {
+    setTimeout(() => {
+      const el = document.activeElement;
+      if (!el || !el.matches || !el.matches('[data-md]')) hideToolbar();
+    }, 150);
+  });
+  window.addEventListener('resize', () => { if (mdTarget && mdTarget.isConnected) showToolbar(mdTarget); });
+
   window.addEventListener('beforeunload', (event) => {
     if (E.dirty && app() && app().state.view === 'editor') {
       event.preventDefault();
@@ -769,6 +1031,8 @@
 
   window.TeacherEditor = {
     views: { builder: viewBuilder, editor: viewEditor },
+    /** The lesson being edited (read-only use, e.g. automated tests). */
+    current: function () { return E.lesson; },
     afterRender: function () {},
     /** Leaving the editor with unsaved changes needs a second click on the same tab. */
     canLeave: function (target) {

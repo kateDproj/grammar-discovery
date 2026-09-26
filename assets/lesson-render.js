@@ -212,6 +212,16 @@
       '</tbody></table></div></div>' + tagHtml(b.tag !== false) + '</section>';
   }
 
+  /** Options of a choose-gap in random order, so the correct one is not always first. */
+  function shuffle(list) {
+    const a = list.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
   const ACTIONS = '<div class="exercise__actions">' +
     '<button type="button" class="btn-check" data-check-exercise>Перевірити</button>' +
     '<button type="button" class="btn-reveal" data-reveal-exercise>Показати відповіді</button>' +
@@ -225,7 +235,7 @@
       const parts = inner.split('|').map((p) => p.trim()).filter(Boolean);
       if (mode === 'choose') {
         const correct = parts.filter((p) => p.endsWith('*')).map((p) => p.slice(0, -1));
-        const options = parts.map((p) => p.replace(/\*$/, ''));
+        const options = shuffle(parts.map((p) => p.replace(/\*$/, '')));
         return '<select class="gap-select" data-answer="' + (correct.length ? correct : options.slice(0, 1)).join('|') + '" aria-label="gap ' + n + '.' + gap + '">' +
           '<option value="">…</option>' + options.map((o) => '<option>' + o + '</option>').join('') + '</select>';
       }

@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex">
   <title>Довідка для вчителя · Grammar Discovery</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link rel="stylesheet" href="assets/styles.css?v=11">
-  <link rel="stylesheet" href="assets/teacher.css?v=11">
+  <link rel="stylesheet" href="assets/styles.css?v=12">
+  <link rel="stylesheet" href="assets/teacher.css?v=12">
   <style>
     .help h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; scroll-margin-top: 1rem; }
     .help h3 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-top: 1.25rem; }
@@ -30,6 +30,8 @@
     .tip { border-left: 4px solid var(--blue); background: var(--blue-soft); border-radius: 0.5rem; padding: 0.75rem 0.9rem; }
     .warn { border-left: 4px solid #f59e0b; background: var(--amber-soft); border-radius: 0.5rem; padding: 0.75rem 0.9rem; }
     .toc a { color: #1d4ed8; }
+    .ed-md-demo { display: inline-block; background: #0f172a; color: #fff; border-radius: 0.4rem; padding: 0.15rem 0.55rem; font-size: 0.85rem; white-space: nowrap; }
+    .ed-md-demo .gl-accent { color: #93c5fd; }
     .toc a:hover { text-decoration: underline; }
   </style>
 </head>
@@ -67,7 +69,7 @@
       <ol class="nums">
         <li>Відкрийте <a class="text-blue-700 underline" href="teacher.html">панель вчителя</a> → вкладка <b>Уроки</b> → <b>+ Новий урок</b>. Або натисніть <b>Копіювати</b> біля готового уроку, щоб почати з нього.</li>
         <li><b>Основне:</b> назва уроку. ID заповниться сам (латиницею); за потреби змініть його — після першого збереження він уже не змінюється.</li>
-        <li><b>Крок 1:</b> вставте текст або діалог і виділіть цільові форми: <code>**if you invite me**</code>.</li>
+        <li><b>Крок 1:</b> вставте текст або діалог; позначте цільові форми мишкою й натисніть <b>Ж</b> на панелі над полем.</li>
         <li><b>Крок 2:</b> 2–4 короткі питання на значення (CCQ). Позначте правильну відповідь кружечком.</li>
         <li><b>Крок 3</b> (необов'язково): питання, які звертають увагу на форму.</li>
         <li><b>Крок 4:</b> речення правила з пропусками <code>___</code>. Для кожного пропуску з'являться поля варіантів.</li>
@@ -100,7 +102,18 @@
     <!-- 3 -->
     <section id="format" class="space-y-4">
       <h2>3. Форматування тексту</h2>
-      <p>У більшості текстових полів можна використовувати просту розмітку. Ліворуч — що ви пишете, праворуч — як це побачить учень.</p>
+      <p>Коли ви клацаєте в текстове поле, над ним з'являється панель кнопок. <b>Позначте текст мишкою й натисніть кнопку</b> — як у Word:</p>
+      <div class="t-table-wrap"><table class="t-table">
+        <thead><tr><th>Кнопка</th><th>Що робить</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ed-md-demo"><b>Ж</b></span></td><td>Жирний. У тексті кроку 1 — <b>виділення цільової форми</b> синім.</td></tr>
+          <tr><td><span class="ed-md-demo"><i>К</i></span></td><td>Курсив. У реченні правила (крок 4) — приклад із тексту синім курсивом.</td></tr>
+          <tr><td><span class="ed-md-demo"><span class="gl-accent">Колір</span></span></td><td>Акцент кольором, як у рамках Grammar Links.</td></tr>
+          <tr><td><span class="ed-md-demo">✕</span></td><td>Прибирає форматування з позначеного тексту.</td></tr>
+          <tr><td><span class="ed-md-demo">Заголовок · • Пункт · › Приклад</span></td><td>Лише в рамці з правилом: змінюють тип рядка, у якому стоїть курсор (див. розділ 7).</td></tr>
+        </tbody>
+      </table></div>
+      <p>Натисніть ту саму кнопку ще раз, щоб зняти форматування. Кнопки просто додають у текст службові знаки — їх видно в полі, і їх можна писати вручну:</p>
       <div class="t-table-wrap"><table class="t-table">
         <thead><tr><th>Ви пишете</th><th>Учень бачить</th><th>Для чого</th></tr></thead>
         <tbody>
@@ -125,7 +138,7 @@
       <h2>4. Крок 1 · Спостереження</h2>
       <p>Заголовок, підказка для учня і сам текст. Є два вигляди.</p>
       <h3>Текст або діалог</h3>
-      <p>Кожен рядок — окремий абзац. Рядок у форматі <code>Ім'я: текст</code> стає реплікою персонажа (ім'я сірим). Щоб виділити форму, позначте слова мишкою і натисніть <b>Виділити позначений текст</b>, або поставте <code>**…**</code> вручну.</p>
+      <p>Кожен рядок — окремий абзац. Рядок у форматі <code>Ім'я: текст</code> стає реплікою персонажа (ім'я сірим). Щоб виділити цільову форму, позначте слова мишкою і натисніть <b>Ж</b> на панелі над полем (у полі з'являться <code>**…**</code>).</p>
       <div class="demo">
         <div><div class="demo__label">Ви пишете</div><pre class="code">Emma: Are you coming to the party tonight?
 David: I will come **if you invite me**.</pre></div>
@@ -180,7 +193,7 @@ David: I will come **if you invite me**.</pre></div>
       <p>Ця частина відкривається учневі після правильного аналізу. Вона складається з блоків: додайте блок через <b>Додати блок</b> → <b>+ Додати</b>, змінюйте порядок стрілками ↑ ↓, видаляйте ✕. Угорі — загальний заголовок (напр. <i>🏆 Great Job! Here is your Grammar Reference.</i>).</p>
 
       <h3>Рамка з правилом (Grammar Links)</h3>
-      <p>Текстова рамка як у підручнику. Прапорець «Позначка Grammar Links у куті» додає рожевий кутик. Текст ділиться на частини порожніми рядками:</p>
+      <p>Текстова рамка як у підручнику. Прапорець «Позначка Grammar Links у куті» додає рожевий кутик. Текст ділиться на частини порожніми рядками. Тип рядка задають кнопки <b>Заголовок</b>, <b>• Пункт</b> і <b>› Приклад</b> на панелі над полем (поставте курсор у рядок і натисніть) — або знак на початку рядка:</p>
       <div class="t-table-wrap"><table class="t-table">
         <thead><tr><th>Рядок починається з…</th><th>Результат</th></tr></thead>
         <tbody>
@@ -210,20 +223,26 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
       <p>Проміжний заголовок, напр. <i>✍️ Practice</i> перед вправами.</p>
 
       <h3>Вправа з пропусками</h3>
-      <p>Кожне речення — з нового рядка; пропуск і правильна відповідь — у квадратних дужках. Вправи нумеруються автоматично. Є два типи:</p>
-      <div class="t-table-wrap"><table class="t-table">
-        <thead><tr><th>Тип</th><th>Як писати</th><th>Значення</th></tr></thead>
-        <tbody>
-          <tr><td class="font-semibold">Учень вписує</td><td><code>David will come [if] you invite him.</code></td><td>Одна правильна відповідь</td></tr>
-          <tr><td></td><td><code>I won't disturb you if you [are working|'re working] when I arrive.</code></td><td>Кілька правильних відповідей — через <code>|</code></td></tr>
-          <tr><td></td><td><code>They'll get lost unless they [have been] there before. (be)</code></td><td>Дужки в кінці речення — сіра підказка</td></tr>
-          <tr><td class="font-semibold">Учень обирає</td><td><code>Jane told me that she [had been*|was] there.</code></td><td>Варіанти через <code>|</code>; правильний — із зірочкою <code>*</code></td></tr>
-        </tbody>
-      </table></div>
+      <p>Спершу оберіть <b>Тип пропусків</b>: учень <b>вписує</b> відповідь або <b>обирає</b> її зі списку. Потім для кожного речення (<b>+ речення</b> додає нове):</p>
+      <ol class="nums">
+        <li>Введіть речення повністю, з правильною відповіддю: <code>English is spoken in many countries.</code></li>
+        <li>Позначте мишкою слова, які учень має вписати чи обрати (<i>is spoken</i>), і натисніть <b>▢ Зробити пропуском</b>. У полі вони опиняться в дужках: <code>English [is spoken] in many countries.</code> В одному реченні може бути кілька пропусків. Щоб прибрати пропуск, видаліть дужки.</li>
+        <li>Під реченням з'явиться блок пропуску з правильною відповіддю:
+          <ul class="dots mt-1">
+            <li>тип <b>«вписує»</b>: <b>+ ще правильна відповідь</b> — інші варіанти, які теж зарахуються (напр. скорочення <i>'re working</i> для <i>are working</i>), кожен в окремому полі;</li>
+            <li>тип <b>«обирає»</b>: <b>+ неправильний варіант</b> — варіанти, які з'являться у списку поруч із правильним. Порядок у списку для учня випадковий.</li>
+          </ul></li>
+        <li><b>Підказка в дужках</b> (необов'язково) — напр. початкова форма дієслова <i>speak</i>; учень побачить її сірим у кінці речення.</li>
+        <li>Рядок <b>«Учень бачить»</b> під кожним реченням одразу показує результат.</li>
+      </ol>
       <div class="demo">
-        <div><div class="demo__label">Ви пишете</div><pre class="code" data-demo-src="gapfill"></pre></div>
+        <div><div class="demo__label">Ви заповнюєте</div><pre class="code">Речення:  I won't disturb you if you [are working] when I arrive.
+Пропуск 1 · правильна відповідь: are working
+  Інші правильні відповіді: 're working
+Підказка: work</pre></div>
         <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-block="gapfill"></div></div>
       </div>
+      <div class="tip">Якщо змінити тип вправи («вписує» ↔ «обирає»), додаткові варіанти очищаються: у першому випадку це інші <i>правильні</i> відповіді, у другому — <i>неправильні</i>, тож автоматично перенести їх не можна.</div>
 
       <h3>Письмове завдання</h3>
       <p>Для відповідей, які не можна перевірити автоматично (перефразування, переказ). Для кожного пункту:</p>
@@ -246,7 +265,7 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
       <h2>8. Як перевіряються відповіді</h2>
       <ul class="dots">
         <li><b>Кроки 2–4</b> перевіряє сервер за позначеними вами відповідями. Учень бачить, які відповіді неправильні (червоним), але не бачить правильних.</li>
-        <li><b>Вправи з пропусками:</b> великі й малі літери не важливі, зайві пробіли ігноруються, апостроф <code>'</code> і <code>’</code> вважаються однаковими. Усі інші варіанти, які ви вважаєте правильними, додайте через <code>|</code>.</li>
+        <li><b>Вправи з пропусками:</b> великі й малі літери не важливі, зайві пробіли ігноруються, апостроф <code>'</code> і <code>’</code> вважаються однаковими. Усі інші варіанти, які ви вважаєте правильними, додайте кнопкою <b>+ ще правильна відповідь</b>.</li>
         <li><b>Письмові завдання</b> не перевіряються автоматично: учень порівнює свій варіант із ключем, а ви бачите обидва в панелі.</li>
         <li>Кожна спроба і кожна перевірка вправ записуються — ви бачите їх на сторінці учня в панелі.</li>
       </ul>
@@ -258,7 +277,7 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
       <p>Панель угорі редактора оновлюється під час роботи.</p>
       <ul class="dots">
         <li><span class="font-semibold text-red-700">Червоне — потрібно виправити:</span> немає назви або ID, у питанні не позначено правильну відповідь, менше двох заповнених варіантів, немає жодного питання. Поки є червоні пункти, урок не зберігається.</li>
-        <li><span class="font-semibold text-amber-800">Жовте — варто перевірити:</span> немає виділених форм у тексті, речення правила без <code>___</code>, речення вправи без <code>[…]</code>, у вправі «обрати» не позначено правильний варіант <code>*</code>, письмове завдання без ключа, урок без вправ.</li>
+        <li><span class="font-semibold text-amber-800">Жовте — варто перевірити:</span> немає виділених форм у тексті, речення правила без <code>___</code>, речення вправи без пропуску, у вправі «обирає» немає неправильних варіантів, письмове завдання без ключа, урок без вправ.</li>
         <li><b>Перевірка «чи можна вивести правило»:</b> якщо правильна відповідь пропуску в кроці 4 не трапляється ні в тексті, ні в питаннях, редактор попередить, що учень, можливо, не зможе її вивести.</li>
       </ul>
       <div class="warn"><b>Важливо:</b> ця перевірка порівнює лише слова. Вона не може оцінити, чи справді питання веде учня до відповіді. Зелена панель — це не гарантія, що урок методично правильний: пройдіть урок у попередньому перегляді очима учня.</div>
@@ -311,7 +330,7 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
       <h3>Чи можна додати картинку, аудіо або відео?</h3>
       <p>Поки ні: редактор працює з текстом, таблицями й вправами.</p>
       <h3>Учень написав правильну відповідь іншими словами, а вправа показує помилку.</h3>
-      <p>Додайте цей варіант у дужки через <code>|</code>: <code>[won't talk|will not talk|isn't going to talk]</code>. Зміна діє для наступних перевірок.</p>
+      <p>Відкрийте урок у редакторі й додайте цей варіант кнопкою <b>+ ще правильна відповідь</b> під потрібним пропуском, потім збережіть урок. Зміна діє для наступних перевірок.</p>
       <h3>Чи бачать учні правильні відповіді в коді сторінки?</h3>
       <p>Відповіді на кроки 2–4 — ні: вони зберігаються лише на сервері. Відповіді вправ кроку 5 надходять разом із відкритим правилом, тобто лише учневі, який уже пройшов аналіз.</p>
       <h3>Як додати учнів або вчителів?</h3>
@@ -321,7 +340,7 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
     <p class="text-center text-sm text-slate-400 pb-6"><a href="teacher.html" class="underline hover:text-slate-600">← До панелі вчителя</a></p>
   </main>
 
-  <script src="assets/lesson-render.js?v=11"></script>
+  <script src="assets/lesson-render.js?v=12"></script>
   <script>
     (function () {
       'use strict';
@@ -361,13 +380,12 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
         table: { type: 'table', tag: true, title: 'The Passive: Present Simple and Past Simple', header: ['Tense', 'Form', 'Example'],
           rows: [['Present Simple', 'am / is / are + past participle', '*Millions of phones **are made** here.*'], ['Past Simple', 'was / were + past participle', '*The factory **was built** in 2015.*']] },
         gapfill: { type: 'gapfill', id: 'ex1', mode: 'type', title: 'Fill in the blanks with *if*, *even if* or *unless*.',
-          items: ['David will come [if] you invite him.', "I won't disturb you if you [are working|'re working] when I arrive. (work)"] },
+          items: ["I won't disturb you if you [are working|'re working] when I arrive. (work)"] },
         writing: { type: 'writing', id: 'ex2', title: 'Make passive sentences.', items: [
           { prompt: 'The museum / open / 1990', answer: 'The museum was opened in 1990.', example: true },
           { prompt: 'The bridge / build / 1960', answer: 'The bridge was built in 1960.' }] },
       };
       document.querySelector('[data-demo-src="box"]').textContent = blocks.box.text;
-      document.querySelector('[data-demo-src="gapfill"]').textContent = 'Завдання: ' + blocks.gapfill.title + '\n' + blocks.gapfill.items.join('\n');
       Object.keys(blocks).forEach((k) => {
         const out = document.querySelector('[data-demo-block="' + k + '"]');
         const html = document.createElement('div');

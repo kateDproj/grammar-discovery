@@ -170,3 +170,26 @@
   color: #fff;
 }
 .ed-preview__body { flex: 1; overflow-y: auto; }
+
+/* ---------- formatting toolbar in the lesson editor */
+.ed-md {
+  position: absolute;
+  z-index: 45;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border-radius: 0.6rem;
+  background: #0f172a;
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.25);
+}
+.ed-md button {
+  min-width: 2rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.4rem;
+  color: #fff;
+  font-size: 0.85rem;
+}
+.ed-md button:hover { background: rgb(255 255 255 / 0.15); }
+.ed-md .gl-accent { color: #93c5fd; }
+.ed-gap-preview .gap-input, .ed-gap-preview .gap-select { pointer-events: none; }
