@@ -173,7 +173,9 @@
     const checkQuestion = (q, name, isGap) => {
       if (!isGap && !String(q.question || '').trim() && !String(q.quote || '').trim()) errors.push(name + ': введіть питання.');
       const filled = q.options.filter((o) => String(o.text).trim());
-      if (filled.length < 2 || filled.length !== q.options.length) errors.push(name + ': потрібно щонайменше два заповнені варіанти (без порожніх).');
+      if (filled.length < 2 || filled.length !== q.options.length) {
+        errors.push(name + (isGap ? ': заповніть правильну відповідь і неправильні варіанти (без порожніх полів).' : ': потрібно щонайменше два заповнені варіанти (без порожніх).'));
+      }
       if (!q.options.some((o) => o.correct)) errors.push(name + ': позначте правильну відповідь.');
     };
     l.meaning.questions.forEach((q, i) => checkQuestion(q, label(q, i, 'Крок 2')));
@@ -325,6 +327,63 @@
       btn('add', path, null, '+ питання', 't-btn', ' data-tpl="question" data-prefix="' + prefix + '"'), note);
   }
 
+  /** One gap of a rule sentence: the correct answer and the wrong options of the student's dropdown. */
+  function ruleGapEditor(i, j, g) {
+    const path = 'rule.items.' + i + '.gaps.' + j + '.options';
+    let correct = g.options.findIndex((o) => o.correct);
+    if (correct === -1 && g.options.length) {
+      g.options[0].correct = true;
+      correct = 0;
+    }
+    const wrong = g.options.map((o, k) => ({ o: o, k: k })).filter((x) => x.k !== correct);
+    return '<div class="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">' +
+      '<div class="text-sm font-semibold text-slate-700">Пропуск ' + (j + 1) + ' · учень обирає відповідь зі списку</div>' +
+      '<label class="t-label">Правильна відповідь<input class="t-input w-full border-emerald-300" data-bind="' + path + '.' + correct + '.text" value="' + esc(g.options[correct] ? g.options[correct].text : '') + '"></label>' +
+      '<div class="t-label">Неправильні варіанти у списку<span class="t-help">Учень побачить їх разом із правильною відповіддю, у випадковому порядку.</span></div>' +
+      '<div class="space-y-2">' + wrong.map((x) =>
+        '<div class="flex items-center gap-2"><input class="t-input flex-1" data-bind="' + path + '.' + x.k + '.text" value="' + esc(x.o.text) + '" placeholder="напр. unreal, imaginary">' +
+        (wrong.length > 1 ? btn('remove', path, x.k, '✕', 't-btn--ghost', ' title="Видалити варіант"') : '') + '</div>').join('') + '</div>' +
+      (g.options.length < 6 ? btn('add', path, null, '+ неправильний варіант', 't-btn--ghost', ' data-tpl="option"') : '') +
+      '</div>';
+  }
+
+  function rulePreview(item) {
+    const html = R.steps({ title: '', observation: {}, rule: { items: [item] } });
+    const m = html.match(/<ol class="mt-5[^>]*><li>([\s\S]*?)<\/li><\/ol>/);
+    return m ? m[1] : '';
+  }
+
+  /** Rule sentence: the selected words become ___ and a new gap whose correct answer is those words. */
+  function makeRuleGap(el) {
+    const itemPath = el.dataset.bind.replace(/\.text$/, '');
+    const item = getPath(E.lesson, itemPath);
+    let start = el.selectionStart;
+    let end = el.selectionEnd;
+    const v = el.value;
+    while (start < end && /\s/.test(v[start])) start++;
+    while (end > start && /\s/.test(v[end - 1])) end--;
+    if (start === end) {
+      app().toast('Спершу позначте в реченні слово(а), які учень має обрати.', true);
+      return;
+    }
+    const answer = v.slice(start, end);
+    if (answer.indexOf('___') !== -1) {
+      app().toast('Позначте слова поза наявним пропуском ___.', true);
+      return;
+    }
+    const index = (v.slice(0, start).match(/___/g) || []).length;
+    item.text = v.slice(0, start) + '___' + v.slice(end);
+    item.gaps = item.gaps || [];
+    const gap = { id: newQuestionId('r'), options: [] };
+    gap.options.push(option(gap.options, R.plain(answer), true));
+    gap.options.push(option(gap.options, ''));
+    item.gaps.splice(index, 0, gap);
+    changed();
+    refresh();
+    const wrongField = document.querySelector('[data-bind="' + itemPath + '.gaps.' + index + '.options.1.text"]');
+    if (wrongField) wrongField.focus();
+  }
+
   function ruleSection() {
     const items = E.lesson.rule.items;
     return section('Крок 4 · Формулюємо правило',
@@ -334,11 +393,15 @@
         '<div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-700">Речення ' + (i + 1) + '</span>' + moveButtons('rule.items', i, items.length) + '</div>' +
         field('rule.items.' + i + '.text', 'Речення правила', {
           rows: 2,
-          placeholder: 'Sentences like *I will come if you invite me* are called **First Conditionals**. They are used for ___ situations.',
-          help: '___ — пропуск (можна кілька). *приклад з тексту* — буде виділено синім курсивом.',
+          md: 'rule',
+          placeholder: 'напр. Sentences like I will come if you invite me are called First Conditionals. They are used for real, possible situations.',
+          help: i === 0 ? 'Введіть речення повністю, разом із правильними відповідями. Потім позначте слово(а), які учень має обрати, і натисніть ' +
+            '<b>▢ Пропуск / відповідь</b> на чорній панелі над полем: у реченні на тому місці з\'явиться ___, а нижче — блок пропуску з правильною відповіддю, ' +
+            'де ви додасте неправильні варіанти для списку. <b>Пропусків може бути кілька.</b> Щоб виділити приклад із тексту синім курсивом, позначте його й натисніть <i>К</i>.' : '',
         }) +
-        (item.gaps || []).map((g, j) => '<div class="rounded-lg bg-slate-50 p-3"><div class="text-sm font-semibold text-slate-600 mb-2">Пропуск ' + (j + 1) + '</div>' +
-          optionsEditor('rule.items.' + i + '.gaps.' + j + '.options', g.options) + '</div>').join('') +
+        (item.gaps || []).map((g, j) => ruleGapEditor(i, j, g)).join('') +
+        (item.gaps && item.gaps.length ? '<div class="text-sm"><span class="text-slate-500">Учень бачить:</span> <span class="ed-gap-preview" data-rule-preview="' + i + '" inert>' + rulePreview(item) + '</span></div>'
+          : '<p class="text-sm text-amber-800">У реченні ще немає пропуску.</p>') +
         '</div>').join('') + '</div>' +
       btn('add', 'rule.items', null, '+ речення', 't-btn', ' data-tpl="ruleItem"'),
       'Учень заповнює пропуски у правилі, спираючись на свої відповіді у кроках 2–3.');
@@ -803,7 +866,12 @@
       if (path === 'id') E.idTouched = true;
     }
     changed();
-    if (ruleText && syncGaps(ruleText[1])) refresh();
+    if (ruleText && syncGaps(ruleText[1])) return refresh();
+    const ruleAny = path.match(/^rule\.items\.(\d+)\./);
+    if (ruleAny) {
+      const preview = document.querySelector('[data-rule-preview="' + ruleAny[1] + '"]');
+      if (preview) preview.innerHTML = rulePreview(E.lesson.rule.items[Number(ruleAny[1])]);
+    }
   });
 
   document.addEventListener('change', (event) => {
@@ -921,7 +989,7 @@
   // ------------------------------------------------------------ formatting toolbar (appears above the focused field)
 
   const TOOLS = [
-    { act: 'gap', html: '▢ Пропуск / відповідь', title: 'Позначені слова стануть пропуском, а їх текст — правильною відповіддю', only: 'gap' },
+    { act: 'gap', html: '▢ Пропуск / відповідь', title: 'Позначені слова стануть пропуском, а їх текст — правильною відповіддю', only: 'gap rule' },
     { act: 'wrap', mark: '**', html: '<b>Ж</b>', title: 'Жирний. У тексті кроку 1 — виділення цільової форми синім.' },
     { act: 'wrap', mark: '*', html: '<i>К</i>', title: 'Курсив. У реченні правила — приклад із тексту синім курсивом.' },
     { act: 'wrap', mark: '==', html: '<span class="gl-accent">Колір</span>', title: 'Акцент кольором' },
@@ -955,7 +1023,7 @@
   function showToolbar(el) {
     const tb = ensureToolbar();
     mdTarget = el;
-    tb.querySelectorAll('[data-only]').forEach((b) => (b.hidden = el.dataset.md !== b.dataset.only));
+    tb.querySelectorAll('[data-only]').forEach((b) => (b.hidden = b.dataset.only.split(' ').indexOf(el.dataset.md) === -1));
     tb.hidden = false;
     const r = el.getBoundingClientRect();
     tb.style.top = Math.max(0, window.scrollY + r.top - tb.offsetHeight - 4) + 'px';
@@ -968,7 +1036,7 @@
   }
 
   function applyTool(tool, el) {
-    if (tool.act === 'gap') return makeGap(el);
+    if (tool.act === 'gap') return el.dataset.gapSentence ? makeGap(el) : makeRuleGap(el);
     let start = el.selectionStart;
     let end = el.selectionEnd;
     let v = el.value;

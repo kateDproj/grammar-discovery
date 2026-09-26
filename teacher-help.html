@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex">
   <title>Довідка для вчителя · Grammar Discovery</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link rel="stylesheet" href="assets/styles.css?v=13">
-  <link rel="stylesheet" href="assets/teacher.css?v=13">
+  <link rel="stylesheet" href="assets/styles.css?v=14">
+  <link rel="stylesheet" href="assets/teacher.css?v=14">
   <style>
     .help h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; scroll-margin-top: 1rem; }
     .help h3 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-top: 1.25rem; }
@@ -72,7 +72,7 @@
         <li><b>Крок 1:</b> вставте текст або діалог; позначте цільові форми мишкою й натисніть <b>Ж</b> на панелі над полем.</li>
         <li><b>Крок 2:</b> 2–4 короткі питання на значення (CCQ). Позначте правильну відповідь кружечком.</li>
         <li><b>Крок 3</b> (необов'язково): питання, які звертають увагу на форму.</li>
-        <li><b>Крок 4:</b> речення правила з пропусками <code>___</code>. Для кожного пропуску з'являться поля варіантів.</li>
+        <li><b>Крок 4:</b> речення правила повністю; позначте відповідь і натисніть <b>▢ Пропуск / відповідь</b>, потім додайте неправильні варіанти для списку.</li>
         <li><b>Крок 5:</b> правило з підручника (рамка або таблиця) і вправи.</li>
         <li>Подивіться на панель перевірок угорі: червоне треба виправити, жовте — варто перевірити.</li>
         <li><b>👁 Попередній перегляд</b> — пройдіть урок очима учня.</li>
@@ -178,11 +178,19 @@ David: I will come **if you invite me**.</pre></div>
     <!-- 6 -->
     <section id="rule" class="space-y-4">
       <h2>6. Крок 4 · Правило з пропусками</h2>
-      <p>Напишіть речення правила і поставте <code>___</code> (три підкреслення) на місці кожного пропуску. Щойно ви введете <code>___</code>, під реченням з'явиться блок «Пропуск» з полями варіантів — позначте правильний. В одному реченні може бути кілька пропусків.</p>
+      <p>У кроці 4 учень сам «складає» правило: обирає пропущені слова з випадних списків.</p>
+      <ol class="nums">
+        <li><b>Введіть речення правила повністю</b>, разом із правильними відповідями: <code>Sentences like I will come if you invite me are called First Conditionals. They are used for real, possible situations in the future.</code></li>
+        <li><b>Позначте слово(а), які учень має обрати</b> (<i>real, possible</i>), і натисніть зелену кнопку <b>▢ Пропуск / відповідь</b> на чорній панелі над полем. У реченні на цьому місці з'явиться <code>___</code>.</li>
+        <li>Під реченням з'явиться блок <b>«Пропуск»</b>: поле <b>Правильна відповідь</b> уже заповнене позначеними словами, а в поле <b>Неправильні варіанти</b> впишіть інші пункти списку (<i>unreal, imaginary</i>). <b>+ неправильний варіант</b> додає ще один.</li>
+        <li><b>Кілька пропусків:</b> повторіть кроки 2–3 для кожного. Щоб прибрати пропуск, видаліть <code>___</code> у реченні.</li>
+        <li>Приклад із тексту позначте й натисніть <i>К</i> — учень побачить його синім курсивом. Рядок <b>«Учень бачить»</b> показує результат.</li>
+      </ol>
       <div class="demo">
-        <div><div class="demo__label">Ви пишете</div><pre class="code">Sentences like *I will come if you invite me* are called **First Conditionals**. They are used for ___ situations in the future.
-
-Пропуск 1:  ◉ real, possible   ○ unreal, imaginary</pre></div>
+        <div><div class="demo__label">Ви заповнюєте</div><pre class="code">Речення:  Sentences like *I will come if you invite me* are called **First Conditionals**. They are used for ___ situations in the future.
+Пропуск 1
+  Правильна відповідь:  real, possible
+  Неправильні варіанти: unreal, imaginary</pre></div>
         <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-rule></div></div>
       </div>
       <div class="tip"><b>Порада:</b> називайте структуру разом із прикладом із тексту — <code>Sentences like *…* are called …</code>. Тоді учень знає, про які саме речення йдеться, навіть якщо ще не знає терміна.</div>
@@ -342,7 +350,7 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
     <p class="text-center text-sm text-slate-400 pb-6"><a href="teacher.html" class="underline hover:text-slate-600">← До панелі вчителя</a></p>
   </main>
 
-  <script src="assets/lesson-render.js?v=13"></script>
+  <script src="assets/lesson-render.js?v=14"></script>
   <script>
     (function () {
       'use strict';
