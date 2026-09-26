@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex">
   <title>Довідка для вчителя · Grammar Discovery</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link rel="stylesheet" href="assets/styles.css?v=12">
-  <link rel="stylesheet" href="assets/teacher.css?v=12">
+  <link rel="stylesheet" href="assets/styles.css?v=13">
+  <link rel="stylesheet" href="assets/teacher.css?v=13">
   <style>
     .help h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; scroll-margin-top: 1rem; }
     .help h3 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-top: 1.25rem; }
@@ -111,6 +111,7 @@
           <tr><td><span class="ed-md-demo"><span class="gl-accent">Колір</span></span></td><td>Акцент кольором, як у рамках Grammar Links.</td></tr>
           <tr><td><span class="ed-md-demo">✕</span></td><td>Прибирає форматування з позначеного тексту.</td></tr>
           <tr><td><span class="ed-md-demo">Заголовок · • Пункт · › Приклад</span></td><td>Лише в рамці з правилом: змінюють тип рядка, у якому стоїть курсор (див. розділ 7).</td></tr>
+          <tr><td><span class="ed-md-demo" style="background:#059669">▢ Пропуск / відповідь</span></td><td>Лише в реченнях вправи з пропусками: позначені слова стають пропуском, а їх текст — правильною відповіддю (див. розділ 7).</td></tr>
         </tbody>
       </table></div>
       <p>Натисніть ту саму кнопку ще раз, щоб зняти форматування. Кнопки просто додають у текст службові знаки — їх видно в полі, і їх можна писати вручну:</p>
@@ -226,8 +227,9 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
       <p>Спершу оберіть <b>Тип пропусків</b>: учень <b>вписує</b> відповідь або <b>обирає</b> її зі списку. Потім для кожного речення (<b>+ речення</b> додає нове):</p>
       <ol class="nums">
         <li>Введіть речення повністю, з правильною відповіддю: <code>English is spoken in many countries.</code></li>
-        <li>Позначте мишкою слова, які учень має вписати чи обрати (<i>is spoken</i>), і натисніть <b>▢ Зробити пропуском</b>. У полі вони опиняться в дужках: <code>English [is spoken] in many countries.</code> В одному реченні може бути кілька пропусків. Щоб прибрати пропуск, видаліть дужки.</li>
-        <li>Під реченням з'явиться блок пропуску з правильною відповіддю:
+        <li>Позначте мишкою слова, які учень має вписати чи обрати (<i>is spoken</i>), і натисніть зелену кнопку <b>▢ Пропуск / відповідь</b> на чорній панелі над полем. У полі вони опиняться в дужках: <code>English [is spoken] in many countries.</code> Щоб прибрати пропуск, видаліть дужки.</li>
+        <li><b>Кілька пропусків в одному реченні:</b> повторіть те саме для кожного — позначте наступні слова й знову натисніть кнопку. Для кожного пропуску з'явиться окремий блок: <code>If you [heat] ice, it [melts].</code> → Пропуск 1: <i>heat</i>, Пропуск 2: <i>melts</i>.</li>
+        <li>Під реченням з'явиться блок кожного пропуску з правильною відповіддю:
           <ul class="dots mt-1">
             <li>тип <b>«вписує»</b>: <b>+ ще правильна відповідь</b> — інші варіанти, які теж зарахуються (напр. скорочення <i>'re working</i> для <i>are working</i>), кожен в окремому полі;</li>
             <li>тип <b>«обирає»</b>: <b>+ неправильний варіант</b> — варіанти, які з'являться у списку поруч із правильним. Порядок у списку для учня випадковий.</li>
@@ -340,7 +342,7 @@ Past Simple    | was / were + past participle    | *The factory **was built** in
     <p class="text-center text-sm text-slate-400 pb-6"><a href="teacher.html" class="underline hover:text-slate-600">← До панелі вчителя</a></p>
   </main>
 
-  <script src="assets/lesson-render.js?v=12"></script>
+  <script src="assets/lesson-render.js?v=13"></script>
   <script>
     (function () {
       'use strict';

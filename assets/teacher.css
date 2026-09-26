@@ -193,3 +193,5 @@
 .ed-md button:hover { background: rgb(255 255 255 / 0.15); }
 .ed-md .gl-accent { color: #93c5fd; }
 .ed-gap-preview .gap-input, .ed-gap-preview .gap-select { pointer-events: none; }
+.ed-md button.ed-md__gap { background: #059669; font-weight: 600; }
+.ed-md button.ed-md__gap:hover { background: #047857; }

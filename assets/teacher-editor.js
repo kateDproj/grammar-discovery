@@ -461,15 +461,41 @@
     return '<div class="rounded-xl bg-slate-50 p-3 space-y-3">' +
       '<div class="flex items-center justify-between gap-2"><span class="text-sm font-semibold text-slate-600">Речення ' + (j + 1) + '</span>' +
       moveButtons('reward.blocks.' + i + '.items', j, count) + '</div>' +
-      '<label class="t-label">Речення<input class="t-input w-full" data-md="inline" data-gap-sentence="' + key + '" data-bind="__gs.' + key + '" value="' + esc(model.sentence) + '" placeholder="напр. English is spoken in many countries."></label>' +
-      '<div class="flex flex-wrap items-center gap-2"><button type="button" class="t-btn t-btn--soft" data-ed="make-gap" data-gap="' + key + '">▢ Зробити пропуском</button>' +
-      (j === 0 ? '<span class="t-help">Позначте в реченні слово(а), які учень має ' + (choose ? 'обрати' : 'вписати') + ', і натисніть. Пропуск показано в дужках [ ]; ' +
-      'щоб прибрати пропуск, видаліть дужки.</span>' : '') + '</div>' +
+      '<label class="t-label">Речення<input class="t-input w-full" data-md="gap" data-gap-sentence="' + key + '" data-bind="__gs.' + key + '" value="' + esc(model.sentence) + '" placeholder="напр. English is spoken in many countries."></label>' +
+      (j === 0 ? '<p class="t-help">Введіть речення повністю. Позначте слово(а), які учень має ' + (choose ? 'обрати' : 'вписати') +
+      ', і натисніть <b>▢ Пропуск / відповідь</b> на чорній панелі над полем. <b>Пропусків може бути кілька</b> — повторіть для кожного. ' +
+      'Пропуск видно в дужках [ ]; щоб прибрати його, видаліть дужки.</p>' : '') +
       (model.gaps.length ? gaps : '<p class="text-sm text-amber-800">У реченні ще немає пропуску.</p>') +
       '<label class="t-label">Підказка в дужках (необов\'язково)<input class="t-input w-64" data-gap-hint="' + key + '" data-bind="__gh.' + key + '" value="' + esc(model.hint) + '" placeholder="напр. speak">' +
       (j === 0 ? '<span class="t-help">Показується сірим у кінці речення, напр. початкова форма дієслова.</span>' : '') + '</label>' +
       '<div class="text-sm"><span class="text-slate-500">Учень бачить:</span> <span class="ed-gap-preview" data-gap-preview="' + key + '" inert>' + gapPreview(item, choose) + '</span></div>' +
       '</div>';
+  }
+
+  /** Turns the selected words of a gap-fill sentence into a gap (the correct answer). */
+  function makeGap(input) {
+    let start = input.selectionStart;
+    let end = input.selectionEnd;
+    const v = input.value;
+    while (start < end && v[start] === ' ') start++;
+    while (end > start && v[end - 1] === ' ') end--;
+    if (start === end) {
+      app().toast('Спершу позначте в реченні слово(а) для пропуску.', true);
+      return;
+    }
+    if (/[\[\]]/.test(v.slice(start, end)) || v.slice(0, start).split('[').length !== v.slice(0, start).split(']').length) {
+      app().toast('Позначте слова поза наявним пропуском.', true);
+      return;
+    }
+    input.value = v.slice(0, start) + '[' + v.slice(start, end) + ']' + v.slice(end);
+    const caret = end + 2;
+    updateGapItem(input.dataset.gapSentence, (m) => { m.sentence = input.value; });
+    refresh();
+    const again = document.querySelector('[data-gap-sentence="' + input.dataset.gapSentence + '"]');
+    if (again) {
+      again.focus();
+      again.setSelectionRange(caret, caret);
+    }
   }
 
   function gapBlock(key) {
@@ -834,26 +860,6 @@
       clearAutosave();
       return refresh();
     }
-    if (action === 'make-gap') {
-      const input = document.querySelector('[data-gap-sentence="' + b.dataset.gap + '"]');
-      let start = input.selectionStart;
-      let end = input.selectionEnd;
-      const v = input.value;
-      while (start < end && v[start] === ' ') start++;
-      while (end > start && v[end - 1] === ' ') end--;
-      if (start === end) {
-        app().toast('Спершу позначте в реченні слово(а) для пропуску.', true);
-        input.focus();
-        return;
-      }
-      if (/[\[\]]/.test(v.slice(start, end)) || (v.slice(0, start).split('[').length !== v.slice(0, start).split(']').length)) {
-        app().toast('Позначте слова поза наявним пропуском.', true);
-        return;
-      }
-      input.value = v.slice(0, start) + '[' + v.slice(start, end) + ']' + v.slice(end);
-      updateGapItem(b.dataset.gap, (m) => { m.sentence = input.value; });
-      return refresh();
-    }
     if (action === 'gap-other-add' || action === 'gap-other-remove') {
       const parts = b.dataset.gap.split('.').map(Number);
       updateGapItem(parts[0] + '.' + parts[1], (m) => {
@@ -915,12 +921,13 @@
   // ------------------------------------------------------------ formatting toolbar (appears above the focused field)
 
   const TOOLS = [
+    { act: 'gap', html: '▢ Пропуск / відповідь', title: 'Позначені слова стануть пропуском, а їх текст — правильною відповіддю', only: 'gap' },
     { act: 'wrap', mark: '**', html: '<b>Ж</b>', title: 'Жирний. У тексті кроку 1 — виділення цільової форми синім.' },
     { act: 'wrap', mark: '*', html: '<i>К</i>', title: 'Курсив. У реченні правила — приклад із тексту синім курсивом.' },
     { act: 'wrap', mark: '==', html: '<span class="gl-accent">Колір</span>', title: 'Акцент кольором' },
-    { act: 'line', mark: '# ', html: 'Заголовок', title: 'Рядок — заголовок по центру', box: true },
-    { act: 'line', mark: '- ', html: '• Пункт', title: 'Рядок — пункт списку', box: true },
-    { act: 'line', mark: '> ', html: '› Приклад', title: 'Рядок — приклад курсивом', box: true },
+    { act: 'line', mark: '# ', html: 'Заголовок', title: 'Рядок — заголовок по центру', only: 'box' },
+    { act: 'line', mark: '- ', html: '• Пункт', title: 'Рядок — пункт списку', only: 'box' },
+    { act: 'line', mark: '> ', html: '› Приклад', title: 'Рядок — приклад курсивом', only: 'box' },
     { act: 'clear', html: '✕', title: 'Прибрати форматування з позначеного тексту' },
   ];
   let toolbar = null;
@@ -934,7 +941,7 @@
     toolbar.setAttribute('role', 'toolbar');
     toolbar.setAttribute('aria-label', 'Форматування');
     toolbar.innerHTML = TOOLS.map((t, k) => '<button type="button" data-tool="' + k + '" title="' + esc(t.title) + '"' +
-      (t.box ? ' data-box-only' : '') + '>' + t.html + '</button>').join('');
+      (t.only ? ' data-only="' + t.only + '"' : '') + (t.act === 'gap' ? ' class="ed-md__gap"' : '') + '>' + t.html + '</button>').join('');
     // Keep the focus and the selection in the text field while clicking the buttons.
     toolbar.addEventListener('mousedown', (e) => e.preventDefault());
     toolbar.addEventListener('click', (e) => {
@@ -948,7 +955,7 @@
   function showToolbar(el) {
     const tb = ensureToolbar();
     mdTarget = el;
-    tb.querySelectorAll('[data-box-only]').forEach((b) => (b.hidden = el.dataset.md !== 'box'));
+    tb.querySelectorAll('[data-only]').forEach((b) => (b.hidden = el.dataset.md !== b.dataset.only));
     tb.hidden = false;
     const r = el.getBoundingClientRect();
     tb.style.top = Math.max(0, window.scrollY + r.top - tb.offsetHeight - 4) + 'px';
@@ -961,6 +968,7 @@
   }
 
   function applyTool(tool, el) {
+    if (tool.act === 'gap') return makeGap(el);
     let start = el.selectionStart;
     let end = el.selectionEnd;
     let v = el.value;
