@@ -30,12 +30,12 @@ Content is adapted from *Karpiuk O. English (11th grade), 2019*: Conditionals I 
 - `assets/lesson-render.js` – draws a lesson from its data
 - `assets/teacher-editor.js` – lesson editor in the teacher control center
 - `teacher.html`, `assets/teacher.js`, `assets/teacher.css` – teacher control center
-- `module1.html`, `module2.html` – lessons
+- `teacher-help.html` – guide for teachers: lesson structure, text formatting, every editor block, checks and settings
 - `assets/app.js` – login modal, sticky header, shuffling, checking, unlocking
 - `assets/styles.css` – shared components (Grammar Links boxes, exercises, confetti)
 - `assets/config.js` – URL of the Apps Script Web App
 - `gas/Code.gs` – backend API and one-time `setup()`
-- `gas/reward_*.html` – reward sections served after a correct attempt
+- `gas/reward_*.html` – original hand-written reward sections (used only for lessons without editor content)
 
 ## Creating lessons
 In the teacher control center, open **Уроки** → **+ Новий урок** (or copy an existing lesson). Fill in the five steps, tick the correct answers, check the preview and press **Опублікувати**. The lesson appears on the home page immediately; the answer key is built from the ticked answers and stays on the server. Drafts are hidden from students.

@@ -173,7 +173,9 @@
             $$('input, select, textarea', clone).forEach((n) => n.replaceWith(' ___ '));
             prompt = text(clone);
           }
-          ex.fields.push({ answer: f.dataset.answer || null, writing: f.tagName === 'TEXTAREA', prompt: prompt });
+          const model = f.tagName === 'TEXTAREA' && f.nextElementSibling && f.nextElementSibling.matches('.model-answer')
+            ? text(f.nextElementSibling).replace(/^Надіслати й показати зразок\s*/, '') : '';
+          ex.fields.push({ answer: f.dataset.answer || null, writing: f.tagName === 'TEXTAREA', prompt: prompt, model: model });
         });
         ex.gapCount = ex.fields.filter((f) => f.answer).length;
         meta.exercises[ex.id] = ex;
@@ -459,12 +461,12 @@
       '</summary><div class="t-attempt__body"><div class="t-answer-list">' + items + '</div></div></details>';
   }
 
-  function answerRow(kind, prompt, given, expected) {
+  function answerRow(kind, prompt, given, expected, expectedLabel) {
     const marks = { right: '✓', wrong: '✗', revealed: '👁', writing: '✎' };
     return '<div class="t-answer t-answer--' + kind + '"><span class="t-answer__mark">' + marks[kind] + '</span><div>' +
       (prompt ? '<div class="t-answer__prompt">' + esc(prompt) + '</div>' : '') +
       '<div class="' + (kind === 'writing' ? 't-writing' : 't-answer__given') + '">' + esc(given || '—') + '</div>' +
-      (expected ? '<div class="t-answer__expected">Правильно: ' + esc(expected) + '</div>' : '') +
+      (expected ? '<div class="t-answer__expected">' + (expectedLabel || 'Правильно') + ': ' + esc(expected) + '</div>' : '') +
       '</div></div>';
   }
 
@@ -493,7 +495,7 @@
     const items = ex.fields.map((f, i) => {
       const key = String(i + 1);
       const given = answers[key] || '';
-      if (f.writing) return given ? answerRow('writing', f.prompt, given, '') : '';
+      if (f.writing) return given ? answerRow('writing', f.prompt, given, f.model, 'Ключ') : '';
       if (!f.answer) return '';
       if (revealed.indexOf(key) !== -1) return answerRow('revealed', f.prompt, given + ' (показано)', '');
       const right = accepts(f.answer, given);

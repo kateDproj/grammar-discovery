@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Довідка для вчителя · Grammar Discovery</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="assets/styles.css?v=11">
+  <link rel="stylesheet" href="assets/teacher.css?v=11">
+  <style>
+    .help h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; scroll-margin-top: 1rem; }
+    .help h3 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-top: 1.25rem; }
+    .help p, .help li { line-height: 1.65; }
+    .help ul.dots { list-style: disc; padding-left: 1.25rem; display: grid; gap: 0.35rem; }
+    .help ol.nums { list-style: decimal; padding-left: 1.25rem; display: grid; gap: 0.35rem; }
+    .help code, .help .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.88em;
+      background: #f1f5f9;
+      border-radius: 0.35rem;
+      padding: 0.05rem 0.35rem;
+      color: #0f172a;
+    }
+    .help pre.code { display: block; white-space: pre-wrap; padding: 0.75rem 0.9rem; line-height: 1.55; overflow-x: auto; }
+    .demo { display: grid; gap: 0.75rem; }
+    @media (min-width: 900px) { .demo { grid-template-columns: 1fr 1fr; } }
+    .demo__label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; margin-bottom: 0.35rem; }
+    .demo__out { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 0.75rem; padding: 0.9rem; }
+    .tip { border-left: 4px solid var(--blue); background: var(--blue-soft); border-radius: 0.5rem; padding: 0.75rem 0.9rem; }
+    .warn { border-left: 4px solid #f59e0b; background: var(--amber-soft); border-radius: 0.5rem; padding: 0.75rem 0.9rem; }
+    .toc a { color: #1d4ed8; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased">
+  <main class="help mx-auto max-w-4xl px-4 py-8 sm:py-10 space-y-10">
+
+    <header class="space-y-3">
+      <a href="teacher.html" class="text-sm text-slate-500 hover:text-slate-700">← До панелі вчителя</a>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">Довідка: як створити урок</h1>
+      <p class="text-slate-600">Усе, що вміє редактор уроків: структура уроку, форматування тексту, типи блоків і вправ, перевірки та публікація. Приклади в розділі «Як бачить учень» намальовані тим самим кодом, що й справжні уроки.</p>
+    </header>
+
+    <nav class="t-card toc" aria-label="Зміст">
+      <div class="font-semibold text-slate-800 mb-2">Зміст</div>
+      <ol class="nums text-sm">
+        <li><a href="#quick">Швидкий старт: урок за 10 кроків</a></li>
+        <li><a href="#structure">Структура уроку і навіщо такий порядок</a></li>
+        <li><a href="#format">Форматування тексту</a></li>
+        <li><a href="#step1">Крок 1 · Спостереження</a></li>
+        <li><a href="#questions">Кроки 2–3 · Питання на значення і форму</a></li>
+        <li><a href="#rule">Крок 4 · Правило з пропусками</a></li>
+        <li><a href="#reward">Крок 5 · Правило та вправи (блоки)</a></li>
+        <li><a href="#answers">Як перевіряються відповіді</a></li>
+        <li><a href="#checks">Перевірки редактора</a></li>
+        <li><a href="#publish">Перегляд, чернетка, публікація, копія</a></li>
+        <li><a href="#settings">Налаштування модуля: спроби і показ відповідей</a></li>
+        <li><a href="#editing">Зміни в уже опублікованому уроці</a></li>
+        <li><a href="#faq">Часті питання</a></li>
+      </ol>
+    </nav>
+
+    <!-- 1 -->
+    <section id="quick" class="space-y-3">
+      <h2>1. Швидкий старт: урок за 10 кроків</h2>
+      <ol class="nums">
+        <li>Відкрийте <a class="text-blue-700 underline" href="teacher.html">панель вчителя</a> → вкладка <b>Уроки</b> → <b>+ Новий урок</b>. Або натисніть <b>Копіювати</b> біля готового уроку, щоб почати з нього.</li>
+        <li><b>Основне:</b> назва уроку. ID заповниться сам (латиницею); за потреби змініть його — після першого збереження він уже не змінюється.</li>
+        <li><b>Крок 1:</b> вставте текст або діалог і виділіть цільові форми: <code>**if you invite me**</code>.</li>
+        <li><b>Крок 2:</b> 2–4 короткі питання на значення (CCQ). Позначте правильну відповідь кружечком.</li>
+        <li><b>Крок 3</b> (необов'язково): питання, які звертають увагу на форму.</li>
+        <li><b>Крок 4:</b> речення правила з пропусками <code>___</code>. Для кожного пропуску з'являться поля варіантів.</li>
+        <li><b>Крок 5:</b> правило з підручника (рамка або таблиця) і вправи.</li>
+        <li>Подивіться на панель перевірок угорі: червоне треба виправити, жовте — варто перевірити.</li>
+        <li><b>👁 Попередній перегляд</b> — пройдіть урок очима учня.</li>
+        <li><b>Зберегти як чернетку</b> (учні не бачать) або <b>Опублікувати</b> (урок одразу з'явиться на головній сторінці).</li>
+      </ol>
+      <div class="tip">Незбережені зміни зберігаються у вашому браузері. Якщо зникло світло чи інтернет, відкрийте урок знову — редактор запропонує <b>Відновити</b> зміни.</div>
+    </section>
+
+    <!-- 2 -->
+    <section id="structure" class="space-y-3">
+      <h2>2. Структура уроку і навіщо такий порядок</h2>
+      <p>Кожен урок побудовано за підходом <b>Guided Discovery</b> (індуктивно): учень спершу сам знаходить закономірність, і лише потім бачить готове правило.</p>
+      <div class="t-table-wrap"><table class="t-table">
+        <thead><tr><th>Крок</th><th>Що бачить учень</th><th>Що робить учень</th></tr></thead>
+        <tbody>
+          <tr><td class="font-semibold">1 · Спостереження</td><td>Текст із виділеними формами</td><td>Читає, помічає форми</td></tr>
+          <tr><td class="font-semibold">2 · Аналіз значення</td><td>Питання-CCQ з варіантами</td><td>Перевіряє, чи зрозумів ситуацію</td></tr>
+          <tr><td class="font-semibold">3 · Аналіз форми</td><td>Питання про форму (необов'язковий крок)</td><td>Помічає, як побудована форма</td></tr>
+          <tr><td class="font-semibold">4 · Правило</td><td>Речення правила з пропусками</td><td>Сам формулює правило</td></tr>
+          <tr><td class="font-semibold">5 · Правило та вправи</td><td>Закрито 🔒 до правильної перевірки кроків 2–4</td><td>Бачить правило з підручника і тренується</td></tr>
+        </tbody>
+      </table></div>
+      <p>Відповіді на кроки 2–4 перевіряє сервер; правильні відповіді ніколи не потрапляють у браузер учня до перевірки. Крок 5 сервер надсилає лише після повністю правильної спроби.</p>
+      <div class="tip"><b>Головне правило укладача:</b> кожен пропуск у правилі (крок 4) має бути виведений з прикладів у тексті та відповідей на кроках 2–3. Якщо учень не бачив цього в прикладах, він не зможе «відкрити» правило сам.</div>
+    </section>
+
+    <!-- 3 -->
+    <section id="format" class="space-y-4">
+      <h2>3. Форматування тексту</h2>
+      <p>У більшості текстових полів можна використовувати просту розмітку. Ліворуч — що ви пишете, праворуч — як це побачить учень.</p>
+      <div class="t-table-wrap"><table class="t-table">
+        <thead><tr><th>Ви пишете</th><th>Учень бачить</th><th>Для чого</th></tr></thead>
+        <tbody>
+          <tr><td><code>**are made**</code></td><td data-demo-inline="Phones **are made** here." data-ctx="highlight"></td><td>У кроці 1: виділення цільової форми (синій жирний)</td></tr>
+          <tr><td><code>**are made**</code></td><td data-demo-inline="Phones **are made** here."></td><td>В інших полях: просто жирний</td></tr>
+          <tr><td><code>*if*</code></td><td data-demo-inline="with *if* or *unless*"></td><td>Курсив: слова-приклади, назви</td></tr>
+          <tr><td><code>*I will come if you invite me*</code></td><td data-demo-inline="Sentences like *I will come if you invite me* are called…" data-ctx="example"></td><td>У реченні правила (крок 4): приклад із тексту синім курсивом</td></tr>
+          <tr><td><code>==unless==</code></td><td data-demo-inline="The clause can start with ==if== or ==unless==."></td><td>Акцент кольором (як у рамках Grammar Links)</td></tr>
+          <tr><td><code>*It **was** built*</code></td><td data-demo-inline="*It **was** built in 2015.*"></td><td>Можна поєднувати: курсив із жирним усередині</td></tr>
+          <tr><td>новий рядок</td><td data-demo-inline="First line&#10;Second line"></td><td>Перенос рядка (у цитатах, рамках, діалогах)</td></tr>
+        </tbody>
+      </table></div>
+      <ul class="dots text-sm text-slate-600">
+        <li>Зірочки завжди ставте парами і без пробілів усередині: <code>**was built**</code>, а не <code>** was built **</code>.</li>
+        <li>У випадних списках (варіанти в кроці 4 і вправах «обрати») розмітка не працює — там показується простий текст.</li>
+        <li>HTML-теги писати не потрібно і не можна: вони відображаються як звичайний текст.</li>
+      </ul>
+    </section>
+
+    <!-- 4 -->
+    <section id="step1" class="space-y-4">
+      <h2>4. Крок 1 · Спостереження</h2>
+      <p>Заголовок, підказка для учня і сам текст. Є два вигляди.</p>
+      <h3>Текст або діалог</h3>
+      <p>Кожен рядок — окремий абзац. Рядок у форматі <code>Ім'я: текст</code> стає реплікою персонажа (ім'я сірим). Щоб виділити форму, позначте слова мишкою і натисніть <b>Виділити позначений текст</b>, або поставте <code>**…**</code> вручну.</p>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете</div><pre class="code">Emma: Are you coming to the party tonight?
+David: I will come **if you invite me**.</pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-obs="text"></div></div>
+      </div>
+      <h3>Пари речень</h3>
+      <p>Дві колонки поруч — наприклад, пряма мова ліворуч і непряма праворуч. Задайте назви колонок і підписи, а потім додайте пари кнопкою <b>+ пара</b>. Виділення <code>**…**</code> працює в обох колонках.</p>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете (пара)</div><pre class="code">Ліворуч:  The waiter said, "The crab salad is always a big hit."
+Праворуч: The waiter said **that the crab salad was** always a big hit.</pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-obs="pairs"></div></div>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="questions" class="space-y-4">
+      <h2>5. Кроки 2–3 · Питання на значення і форму</h2>
+      <p>Кожне питання має: <b>цитату з тексту</b> (необов'язково), <b>питання</b> і <b>2–6 варіантів</b>. Кружечком ліворуч позначте правильний варіант. Учні бачать варіанти щоразу в іншому порядку, тож не має значення, який варіант ви пишете першим.</p>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете</div><pre class="code">Цитата:  David: "If I had the money, I would buy a huge house."
+Питання: Does David have the money now?
+◉ No, he doesn't.
+○ Yes, he does.</pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-question></div></div>
+      </div>
+      <h3>Як писати добрі CCQ</h3>
+      <ul class="dots">
+        <li><b>Одне поняття — одне питання.</b> Питайте про конкретну ситуацію: <i>Does David have the money now?</i> — а не про абстрактні категорії («реальна чи уявна ситуація?»).</li>
+        <li><b>Проста мова</b>, простіша за саму граматику уроку.</li>
+        <li><b>Відповідь видно з контексту</b> — учень має відповісти, спираючись на текст, а не на знання правила.</li>
+        <li><b>Питання на форму</b> (крок 3) звертають увагу на те, що учні легко пропускають: <i>Which verb form comes after «if»?</i> Особливо корисно там, де українська мова «підказує» помилку (напр. майбутній час після <i>якщо</i>).</li>
+        <li>Два варіанти відповіді легко вгадати. Там, де можна, дайте три.</li>
+      </ul>
+    </section>
+
+    <!-- 6 -->
+    <section id="rule" class="space-y-4">
+      <h2>6. Крок 4 · Правило з пропусками</h2>
+      <p>Напишіть речення правила і поставте <code>___</code> (три підкреслення) на місці кожного пропуску. Щойно ви введете <code>___</code>, під реченням з'явиться блок «Пропуск» з полями варіантів — позначте правильний. В одному реченні може бути кілька пропусків.</p>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете</div><pre class="code">Sentences like *I will come if you invite me* are called **First Conditionals**. They are used for ___ situations in the future.
+
+Пропуск 1:  ◉ real, possible   ○ unreal, imaginary</pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-rule></div></div>
+      </div>
+      <div class="tip"><b>Порада:</b> називайте структуру разом із прикладом із тексту — <code>Sentences like *…* are called …</code>. Тоді учень знає, про які саме речення йдеться, навіть якщо ще не знає терміна.</div>
+    </section>
+
+    <!-- 7 -->
+    <section id="reward" class="space-y-5">
+      <h2>7. Крок 5 · Правило та вправи (блоки)</h2>
+      <p>Ця частина відкривається учневі після правильного аналізу. Вона складається з блоків: додайте блок через <b>Додати блок</b> → <b>+ Додати</b>, змінюйте порядок стрілками ↑ ↓, видаляйте ✕. Угорі — загальний заголовок (напр. <i>🏆 Great Job! Here is your Grammar Reference.</i>).</p>
+
+      <h3>Рамка з правилом (Grammar Links)</h3>
+      <p>Текстова рамка як у підручнику. Прапорець «Позначка Grammar Links у куті» додає рожевий кутик. Текст ділиться на частини порожніми рядками:</p>
+      <div class="t-table-wrap"><table class="t-table">
+        <thead><tr><th>Рядок починається з…</th><th>Результат</th></tr></thead>
+        <tbody>
+          <tr><td><code># </code></td><td>Заголовок по центру (синій)</td></tr>
+          <tr><td><code>- </code></td><td>Пункт списку з кружечком; наступні рядки до порожнього рядка належать цьому пункту</td></tr>
+          <tr><td><code>&gt; </code></td><td>Приклад курсивом</td></tr>
+          <tr><td>порожній рядок</td><td>Новий абзац / новий пункт</td></tr>
+          <tr><td>будь-що інше</td><td>Звичайний абзац</td></tr>
+        </tbody>
+      </table></div>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете</div><pre class="code" data-demo-src="box"></pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-block="box"></div></div>
+      </div>
+
+      <h3>Таблиця</h3>
+      <p>Заголовок таблиці і «правило над таблицею» — необов'язкові. Заповніть рядок заголовків і рядки даних; <b>+ рядок</b>, <b>+ стовпець</b>, <b>− стовпець</b> змінюють розмір. Перший стовпець автоматично виділяється синім. У клітинках працює розмітка: <code>*приклад з **жирним** дієсловом*</code>. Якщо рядок заголовків порожній, таблиця буде без нього.</p>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете</div><pre class="code">Заголовок: The Passive: Present Simple and Past Simple
+Tense          | Form                            | Example
+Present Simple | am / is / are + past participle | *Millions of phones **are made** here.*
+Past Simple    | was / were + past participle    | *The factory **was built** in 2015.*</pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-block="table"></div></div>
+      </div>
+
+      <h3>Заголовок</h3>
+      <p>Проміжний заголовок, напр. <i>✍️ Practice</i> перед вправами.</p>
+
+      <h3>Вправа з пропусками</h3>
+      <p>Кожне речення — з нового рядка; пропуск і правильна відповідь — у квадратних дужках. Вправи нумеруються автоматично. Є два типи:</p>
+      <div class="t-table-wrap"><table class="t-table">
+        <thead><tr><th>Тип</th><th>Як писати</th><th>Значення</th></tr></thead>
+        <tbody>
+          <tr><td class="font-semibold">Учень вписує</td><td><code>David will come [if] you invite him.</code></td><td>Одна правильна відповідь</td></tr>
+          <tr><td></td><td><code>I won't disturb you if you [are working|'re working] when I arrive.</code></td><td>Кілька правильних відповідей — через <code>|</code></td></tr>
+          <tr><td></td><td><code>They'll get lost unless they [have been] there before. (be)</code></td><td>Дужки в кінці речення — сіра підказка</td></tr>
+          <tr><td class="font-semibold">Учень обирає</td><td><code>Jane told me that she [had been*|was] there.</code></td><td>Варіанти через <code>|</code>; правильний — із зірочкою <code>*</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете</div><pre class="code" data-demo-src="gapfill"></pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-block="gapfill"></div></div>
+      </div>
+
+      <h3>Письмове завдання</h3>
+      <p>Для відповідей, які не можна перевірити автоматично (перефразування, переказ). Для кожного пункту:</p>
+      <ul class="dots">
+        <li><b>Завдання для учня</b> — речення або підказка (напр. <code>The bridge / build / 1960</code>).</li>
+        <li><b>Правильна відповідь (ключ)</b> — учень побачить її після того, як надішле свій варіант (кнопка «Надіслати й показати зразок»). У панелі вчителя ви побачите відповідь учня поруч із ключем.</li>
+        <li><b>Це зразок виконання</b> — позначте для першого пункту, якщо хочете показати відповідь одразу, як приклад у підручнику.</li>
+        <li><b>Текст до завдання</b> (необов'язково) — напр. діалог, який треба переказати. Якщо пункт один і поле «Завдання для учня» порожнє, учень бачить одне велике поле для відповіді до всього тексту.</li>
+      </ul>
+      <div class="demo">
+        <div><div class="demo__label">Ви пишете</div><pre class="code">Завдання: Make passive sentences.
+1. The museum / open / 1990  → The museum was opened in 1990.  ☑ зразок виконання
+2. The bridge / build / 1960 → The bridge was built in 1960.</pre></div>
+        <div><div class="demo__label">Учень бачить</div><div class="demo__out" data-demo-block="writing"></div></div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section id="answers" class="space-y-3">
+      <h2>8. Як перевіряються відповіді</h2>
+      <ul class="dots">
+        <li><b>Кроки 2–4</b> перевіряє сервер за позначеними вами відповідями. Учень бачить, які відповіді неправильні (червоним), але не бачить правильних.</li>
+        <li><b>Вправи з пропусками:</b> великі й малі літери не важливі, зайві пробіли ігноруються, апостроф <code>'</code> і <code>’</code> вважаються однаковими. Усі інші варіанти, які ви вважаєте правильними, додайте через <code>|</code>.</li>
+        <li><b>Письмові завдання</b> не перевіряються автоматично: учень порівнює свій варіант із ключем, а ви бачите обидва в панелі.</li>
+        <li>Кожна спроба і кожна перевірка вправ записуються — ви бачите їх на сторінці учня в панелі.</li>
+      </ul>
+    </section>
+
+    <!-- 9 -->
+    <section id="checks" class="space-y-3">
+      <h2>9. Перевірки редактора</h2>
+      <p>Панель угорі редактора оновлюється під час роботи.</p>
+      <ul class="dots">
+        <li><span class="font-semibold text-red-700">Червоне — потрібно виправити:</span> немає назви або ID, у питанні не позначено правильну відповідь, менше двох заповнених варіантів, немає жодного питання. Поки є червоні пункти, урок не зберігається.</li>
+        <li><span class="font-semibold text-amber-800">Жовте — варто перевірити:</span> немає виділених форм у тексті, речення правила без <code>___</code>, речення вправи без <code>[…]</code>, у вправі «обрати» не позначено правильний варіант <code>*</code>, письмове завдання без ключа, урок без вправ.</li>
+        <li><b>Перевірка «чи можна вивести правило»:</b> якщо правильна відповідь пропуску в кроці 4 не трапляється ні в тексті, ні в питаннях, редактор попередить, що учень, можливо, не зможе її вивести.</li>
+      </ul>
+      <div class="warn"><b>Важливо:</b> ця перевірка порівнює лише слова. Вона не може оцінити, чи справді питання веде учня до відповіді. Зелена панель — це не гарантія, що урок методично правильний: пройдіть урок у попередньому перегляді очима учня.</div>
+    </section>
+
+    <!-- 10 -->
+    <section id="publish" class="space-y-3">
+      <h2>10. Перегляд, чернетка, публікація, копія</h2>
+      <ul class="dots">
+        <li><b>👁 Попередній перегляд</b> — урок так, як його бачить учень, разом із кроком 5. Прапорець «Показати правильні відповіді» підсвічує правильні варіанти й заповнює пропуски. (У перегляді варіанти не перемішуються — в учнів перемішуються.)</li>
+        <li><b>Зберегти як чернетку</b> — урок збережено, але учні його не бачать. Так само можна сховати вже опублікований урок.</li>
+        <li><b>Опублікувати</b> — урок з'являється на головній сторінці. Посилання на урок: <code>lesson.html?id=ID_уроку</code>.</li>
+        <li><b>Копіювати</b> (у списку уроків) — новий урок-чернетка з тим самим змістом. Зручно, щоб зробити схожий урок або безпечно змінити опублікований.</li>
+        <li>Якщо ви виходите з редактора з незбереженими змінами, панель попросить натиснути ще раз. Копія змін лишається у вашому браузері.</li>
+      </ul>
+    </section>
+
+    <!-- 11 -->
+    <section id="settings" class="space-y-3">
+      <h2>11. Налаштування модуля: спроби і показ відповідей</h2>
+      <p>У вкладці <b>Налаштування модулів</b> для кожного уроку:</p>
+      <div class="t-table-wrap"><table class="t-table">
+        <thead><tr><th>Налаштування</th><th>Значення за замовчуванням</th><th>Що робить</th></tr></thead>
+        <tbody>
+          <tr><td class="font-semibold">Максимум спроб (кроки 2–4)</td><td>без обмежень</td><td>Скільки разів учень може перевірити аналіз. Після ліміту — «зверніться до вчителя».</td></tr>
+          <tr><td class="font-semibold">Максимум перевірок у вправі</td><td>без обмежень</td><td>Скільки разів можна перевірити кожну вправу з пропусками.</td></tr>
+          <tr><td class="font-semibold">Кнопка «Показати відповіді»</td><td>після 5-ї перевірки</td><td>Коли учень може подивитися відповіді у вправі: після N перевірок, одразу або ніколи. Показуються лише ще неправильні пропуски.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Ліміти перевіряє сервер. Щоб дати учневі нову спробу, на сторінці учня натисніть <b>Скинути спроби відкриття</b>, <b>Скинути вправи</b> або <b>Скинути весь модуль</b>.</p>
+    </section>
+
+    <!-- 12 -->
+    <section id="editing" class="space-y-3">
+      <h2>12. Зміни в уже опублікованому уроці</h2>
+      <div class="warn">
+        <p><b>Виправлення друкарських помилок, підказок, вправ</b> — безпечно.</p>
+        <p class="mt-2"><b>Зміна варіантів або правильних відповідей у кроках 2–4</b>, коли учні вже працювали з уроком, змінює те, як їхні попередні відповіді показуються в панелі (історії версій немає). Для великих змін краще <b>Копіювати</b> урок, змінити копію, опублікувати її і сховати старий урок (зберегти як чернетку).</p>
+      </div>
+      <p>ID уроку після першого збереження не змінюється — від нього залежать посилання і записи спроб.</p>
+    </section>
+
+    <!-- 13 -->
+    <section id="faq" class="space-y-3">
+      <h2>13. Часті питання</h2>
+      <h3>Чи обов'язковий крок 3?</h3>
+      <p>Ні. Якщо в кроці 3 немає питань, учень його не побачить, а нумерація кроків зміниться сама.</p>
+      <h3>Скільки варіантів у питанні?</h3>
+      <p>Від 2 до 6. Правильний — рівно один (позначений кружечком).</p>
+      <h3>Чи можна додати картинку, аудіо або відео?</h3>
+      <p>Поки ні: редактор працює з текстом, таблицями й вправами.</p>
+      <h3>Учень написав правильну відповідь іншими словами, а вправа показує помилку.</h3>
+      <p>Додайте цей варіант у дужки через <code>|</code>: <code>[won't talk|will not talk|isn't going to talk]</code>. Зміна діє для наступних перевірок.</p>
+      <h3>Чи бачать учні правильні відповіді в коді сторінки?</h3>
+      <p>Відповіді на кроки 2–4 — ні: вони зберігаються лише на сервері. Відповіді вправ кроку 5 надходять разом із відкритим правилом, тобто лише учневі, який уже пройшов аналіз.</p>
+      <h3>Як додати учнів або вчителів?</h3>
+      <p>Учнів — у вкладці <b>Учні</b> (+ Додати учня). Нових вчителів додає адміністратор у вкладці <code>Teachers</code> таблиці Google.</p>
+    </section>
+
+    <p class="text-center text-sm text-slate-400 pb-6"><a href="teacher.html" class="underline hover:text-slate-600">← До панелі вчителя</a></p>
+  </main>
+
+  <script src="assets/lesson-render.js?v=11"></script>
+  <script>
+    (function () {
+      'use strict';
+      const R = window.LessonRender;
+      const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+      $$('[data-demo-inline]').forEach((el) => {
+        const ctx = el.dataset.ctx === 'highlight' ? { highlight: true } : el.dataset.ctx === 'example' ? { example: true } : {};
+        el.innerHTML = el.dataset.ctx === 'example'
+          ? '<span class="text-base">' + R.inline(el.dataset.demoInline, ctx) + '</span>'
+          : R.inline(el.dataset.demoInline, ctx);
+      });
+
+      // Pieces of a real lesson drawn by the lesson renderer and cut out of its page.
+      const demo = {
+        title: 'Demo',
+        observation: { title: '', layout: 'text', text: "Emma: Are you coming to the party tonight?\nDavid: I will come **if you invite me**." },
+        meaning: { questions: [{ id: 'q1', quote: 'David: "If I had the money, I would buy a huge house."', question: 'Does David have the money now?',
+          options: [{ value: 'a', text: "No, he doesn't." }, { value: 'b', text: 'Yes, he does.' }] }] },
+        rule: { items: [{ text: 'Sentences like *I will come if you invite me* are called **First Conditionals**. They are used for ___ situations in the future.',
+          gaps: [{ id: 'r1', options: [{ value: 'a', text: 'real, possible' }, { value: 'b', text: 'unreal, imaginary' }] }] }] },
+      };
+      const box = document.createElement('div');
+      box.innerHTML = R.steps(demo);
+      const obsText = box.querySelector('.step-card .mt-4');
+      document.querySelector('[data-demo-obs="text"]').appendChild(obsText);
+      document.querySelector('[data-demo-question]').appendChild(box.querySelector('fieldset'));
+      document.querySelector('[data-demo-rule]').innerHTML = '<ol class="list-decimal pl-6 text-base leading-loose">' + box.querySelector('ol').innerHTML + '</ol>';
+
+      const pairs = document.createElement('div');
+      pairs.innerHTML = R.steps({ title: 'Demo', observation: { layout: 'pairs', pairs: { leftTitle: 'Direct Speech', leftNote: 'What actually happened', rightTitle: 'Reported Speech', rightNote: 'How Emma told the story later',
+        items: [{ left: 'The waiter said, "The crab salad is always a big hit."', right: 'The waiter said **that the crab salad was** always a big hit.' }] } } });
+      document.querySelector('[data-demo-obs="pairs"]').appendChild(pairs.querySelector('.step-card .mt-4'));
+
+      const blocks = {
+        box: { type: 'box', tag: true, text: "# REPORTED SPEECH\n\nWhen we report what someone has said, we can:\n\n- If you want to report ==a statement==, you use a 'that-clause':\n> Alison Clarke said **that** the Government should intervene immediately.\n**Note:** 'that' can be omitted." },
+        table: { type: 'table', tag: true, title: 'The Passive: Present Simple and Past Simple', header: ['Tense', 'Form', 'Example'],
+          rows: [['Present Simple', 'am / is / are + past participle', '*Millions of phones **are made** here.*'], ['Past Simple', 'was / were + past participle', '*The factory **was built** in 2015.*']] },
+        gapfill: { type: 'gapfill', id: 'ex1', mode: 'type', title: 'Fill in the blanks with *if*, *even if* or *unless*.',
+          items: ['David will come [if] you invite him.', "I won't disturb you if you [are working|'re working] when I arrive. (work)"] },
+        writing: { type: 'writing', id: 'ex2', title: 'Make passive sentences.', items: [
+          { prompt: 'The museum / open / 1990', answer: 'The museum was opened in 1990.', example: true },
+          { prompt: 'The bridge / build / 1960', answer: 'The bridge was built in 1960.' }] },
+      };
+      document.querySelector('[data-demo-src="box"]').textContent = blocks.box.text;
+      document.querySelector('[data-demo-src="gapfill"]').textContent = 'Завдання: ' + blocks.gapfill.title + '\n' + blocks.gapfill.items.join('\n');
+      Object.keys(blocks).forEach((k) => {
+        const out = document.querySelector('[data-demo-block="' + k + '"]');
+        const html = document.createElement('div');
+        html.innerHTML = R.reward({ blocks: [blocks[k]] });
+        out.appendChild(html.firstElementChild.firstElementChild);
+      });
+      // As before a student's first check: "show answers" is not offered yet.
+      $$('.demo__out [data-reveal-exercise]').forEach((b) => (b.hidden = true));
+      // Demos are for looking only.
+      $$('.demo__out input, .demo__out select, .demo__out textarea, .demo__out button').forEach((el) => (el.tabIndex = -1));
+      $$('.demo__out').forEach((el) => el.setAttribute('inert', ''));
+    })();
+  </script>
+</body>
+</html>

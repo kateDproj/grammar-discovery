@@ -213,7 +213,7 @@
       }
       if (b.type === 'writing') {
         exercises++;
-        b.items.forEach((it, j) => { if (!String(it.answer).trim()) warnings.push(name + ', завдання ' + (j + 1) + ': додайте зразок відповіді.'); });
+        b.items.forEach((it, j) => { if (!String(it.answer).trim()) warnings.push(name + ', завдання ' + (j + 1) + ': додайте правильну відповідь.'); });
       }
     });
     if (!exercises) warnings.push('Нагорода: немає жодної вправи для практики.');
@@ -266,7 +266,8 @@
       (note ? '<p class="t-help mt-1">' + note + '</p>' : '') + '</div>' + body + '</section>';
   }
 
-  const MARKUP_HELP = '<b>**жирний**</b> — виділення, <i>*курсив*</i>, ==колір== — акцент.';
+  const MARKUP_HELP = '<b>**жирний**</b> — виділення, <i>*курсив*</i>, ==колір== — акцент. ' +
+    '<a class="underline" href="teacher-help.html#format" target="_blank" rel="noopener">Докладніше</a>';
 
   // ------------------------------------------------------------ editor sections
 
@@ -385,10 +386,10 @@
         '<div class="space-y-2">' + b.items.map((it, j) =>
           '<div class="rounded-lg bg-slate-50 p-3 space-y-2"><div class="flex items-center justify-between"><span class="text-sm font-semibold text-slate-600">Завдання ' + (j + 1) + '</span>' +
           moveButtons(path + '.items', j, b.items.length) + '</div>' +
-          field(path + '.items.' + j + '.prompt', 'Що зробити / речення', { rows: 2, help: 'Порожньо, якщо завдання одне на весь текст вище.' }) +
-          field(path + '.items.' + j + '.answer', 'Зразок відповіді', { rows: 2 }) +
+          field(path + '.items.' + j + '.prompt', 'Завдання для учня (речення або підказка)', { rows: 2, help: 'Залиште порожнім, якщо це одне завдання до всього тексту вище (напр. переказати діалог).' }) +
+          field(path + '.items.' + j + '.answer', 'Правильна відповідь (ключ)', { rows: 2, help: 'Учень побачить її після того, як надішле свій варіант. Ви бачите її в панелі поруч із відповіддю учня. Письмові відповіді не перевіряються автоматично.' }) +
           '<label class="flex items-center gap-2 text-sm"><input type="checkbox" data-bind="' + path + '.items.' + j + '.example" data-type="checkbox"' + (it.example ? ' checked' : '') +
-          '> Це приклад: показати відповідь одразу</label></div>').join('') +
+          '> Це зразок виконання: показати учням правильну відповідь одразу (як приклад у підручнику)</label></div>').join('') +
         btn('add', path + '.items', null, '+ завдання', 't-btn--ghost', ' data-tpl="writingItem"') + '</div>';
     }
     return '<div class="rounded-xl border border-slate-200 p-4 space-y-3">' + head + body + '</div>';
@@ -435,6 +436,7 @@
         '</td><td class="text-slate-500">' + (c && c.updated_at ? app().fmtDate(c.updated_at) : '—') + '</td><td class="whitespace-nowrap">' + actions + '</td></tr>';
     }).join('');
     return '<div class="flex flex-wrap items-center gap-3 mb-4"><h1 class="text-2xl font-bold text-slate-900 mr-auto">Уроки</h1>' +
+      '<a class="t-btn t-btn--ghost" href="teacher-help.html" target="_blank" rel="noopener">❓ Як створити урок</a>' +
       '<button type="button" class="t-btn" data-ed="new">+ Новий урок</button></div>' +
       '<div class="t-table-wrap"><table class="t-table"><thead><tr><th>Урок</th><th>ID</th><th>Статус</th><th>Змінено</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<p class="mt-3 text-sm text-slate-500">Чернетки бачите лише ви. Опубліковані уроки з\'являються на головній сторінці для учнів. ' +
@@ -455,6 +457,7 @@
       '<div class="ed-bar"><div class="flex flex-wrap items-center gap-2">' +
       '<h1 class="text-xl font-bold text-slate-900 mr-auto">' + (l.title ? R.inline(l.title) : 'Новий урок') + ' ' + statusChip +
       (E.dirty ? ' <span class="t-chip t-chip--bad">є незбережені зміни</span>' : '') + '</h1>' +
+      '<a class="t-btn t-btn--ghost" href="teacher-help.html" target="_blank" rel="noopener" title="Довідка про редактор і форматування">❓ Довідка</a>' +
       '<button type="button" class="t-btn t-btn--soft" data-ed="preview">👁 Попередній перегляд</button>' +
       '<button type="button" class="t-btn t-btn--soft" data-ed="save" data-status="draft">Зберегти як чернетку</button>' +
       '<button type="button" class="t-btn" data-ed="save" data-status="published">' + (E.status === 'published' && !E.isNew ? 'Зберегти й опублікувати' : 'Опублікувати') + '</button>' +
