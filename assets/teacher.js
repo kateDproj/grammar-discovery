@@ -471,7 +471,7 @@
   }
 
   function practiceBlock(lid, practice) {
-    if (!practice.length) return '<p class="text-sm text-slate-500">Ще не виконував(ла) вправ.</p>';
+    if (!practice.length) return '<p class="text-sm text-slate-500">Вправ ще не виконано.</p>';
     const meta = T.meta[lid] || { exercises: {}, exerciseOrder: [] };
     const ids = meta.exerciseOrder.filter((id) => practice.some((p) => p.exercise_id === id));
     return '<div class="space-y-4">' + ids.map((id) => {
@@ -488,10 +488,19 @@
     }).join('') + '</div>';
   }
 
+  /** Revealed gaps: a JSON list (older rows: comma-separated text). */
+  function parseRevealed(value) {
+    const text = String(value || '').trim();
+    if (text.charAt(0) === '[') {
+      try { return JSON.parse(text).map(String); } catch (err) { return []; }
+    }
+    return /^[0-9,]+$/.test(text) ? text.split(',') : [];
+  }
+
   function practiceEvent(ex, e, open) {
     const answers = parseJson(e.answers_json);
-    const revealed = e.revealed_items ? e.revealed_items.split(',') : [];
-    const labels = { check: 'Перевірка ' + e.check_number, reveal: 'Показав(ла) відповіді', submit: 'Надіслав(ла) письмову відповідь' };
+    const revealed = parseRevealed(e.revealed_items);
+    const labels = { check: 'Перевірка ' + e.check_number, reveal: 'Натиснуто «Показати відповіді»', submit: 'Надіслано письмову відповідь' };
     const items = ex.fields.map((f, i) => {
       const key = String(i + 1);
       const given = answers[key] || '';

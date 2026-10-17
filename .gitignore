@@ -13,3 +13,6 @@ gas/Seed.gs
 
 # Lesson content with answer keys - stored on the server, never in the public repo
 content/
+
+# Thesis texts - not part of the public repo
+thesis/

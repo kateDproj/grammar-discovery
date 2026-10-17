@@ -262,7 +262,7 @@ function practice_(body) {
       toInt_(body.check_number, 0),
       event === 'submit' ? '' : Math.max(0, Math.min(100, toInt_(body.score, 0))),
       JSON.stringify(answers),
-      revealed.join(','),
+      JSON.stringify(revealed), // a JSON list: "2,3,4" would be turned into a date by Google Sheets
       String(body.client_time || '').slice(0, 40),
     ]);
   } finally {
@@ -614,7 +614,7 @@ function latestPractice_(studentId, lessonId) {
       event: row.event,
       check_number: toInt_(row.check_number, 0),
       answers: answers,
-      revealed: row.revealed_items ? row.revealed_items.split(',') : [],
+      revealed: parseRevealed_(row.revealed_items),
     };
   });
   return latest;
@@ -656,6 +656,20 @@ function reward_(lessonId) {
   } catch (err) {
     return '<p>Матеріал для цього модуля ще не додано.</p>';
   }
+}
+
+/** Revealed gaps of a practice event: a JSON list (older rows: comma-separated text). */
+function parseRevealed_(value) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  if (text.charAt(0) === '[') {
+    try {
+      return JSON.parse(text).map(String);
+    } catch (err) {
+      return [];
+    }
+  }
+  return /^[0-9,]+$/.test(text) ? text.split(',') : [];
 }
 
 function toInt_(value, fallback) {
