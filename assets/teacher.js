@@ -506,14 +506,16 @@
       const given = answers[key] || '';
       if (f.writing) return given ? answerRow('writing', f.prompt, given, f.model, 'Ключ') : '';
       if (!f.answer) return '';
-      if (revealed.indexOf(key) !== -1) return answerRow('revealed', f.prompt, given + ' (показано)', '');
+      if (revealed.indexOf(key) !== -1) return answerRow('revealed', f.prompt, given + ' (показав застосунок)', '');
       const right = accepts(f.answer, given);
       return answerRow(right ? 'right' : 'wrong', f.prompt, given, right ? '' : f.answer.split('|')[0]);
     }).join('');
     const chip = e.event === 'submit' ? '' : '<span class="t-chip ' + (Number(e.score) === 100 ? 't-chip--done' : 't-chip--progress') + '">' + esc(e.score) + '%</span>';
     return '<details class="t-attempt"' + (open ? ' open' : '') + '><summary><span class="font-semibold">' + labels[e.event] + '</span>' +
       '<span class="text-slate-500">' + fmtDate(e.timestamp) + '</span>' + chip + '</summary>' +
-      '<div class="t-attempt__body"><div class="t-answer-list">' + (items || '<p class="text-sm text-slate-500">—</p>') + '</div></div></details>';
+      '<div class="t-attempt__body">' +
+      (e.event === 'reveal' ? '<p class="t-help mb-2">👁 — відповідь показав застосунок після натискання «Показати відповіді»; ✓ — учень знайшов відповідь сам.</p>' : '') +
+      '<div class="t-answer-list">' + (items || '<p class="text-sm text-slate-500">—</p>') + '</div></div></details>';
   }
 
   function viewLessons() {
